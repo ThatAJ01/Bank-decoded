@@ -1,0 +1,1265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bank Decoded</title>
+<style>
+:root{
+  color-scheme:dark;
+  /* Bank Decoded brand: deep teal-charcoal #172225 and warm tan #d8c0a1 (from the logo) */
+  --bg:#172225; --surface:#1d2b2f; --ink:#efe7da; --muted:#a8b3af; --line:#2f4247;
+  --accent:#d8c0a1; --accent-soft:#2c3a38; --on-accent:#172225;
+  --c1:#d8c0a1; --c2:#4fb3a3; --c3:#e0a64a; --c4:#b79ad6; --c5:#8da0a6; --c6:#e1788f; --c7:#6bb6d6; --c8:#aab85a;
+  --ok:#6fd3a0; --warn:#f0c264; --bad:#ff8c9d;
+  --ok-bg:#183529; --warn-bg:#3a2f14; --bad-bg:#40202a; --auth-bg:#2d2638; --auth:#c9a8e6;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+header.site{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;margin-right:auto;color:var(--ink);text-decoration:none;letter-spacing:.02em}
+.brand .logo{height:40px;width:auto;flex:none}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:.72rem;letter-spacing:0}
+p a,td a,li a,.ref a,.legal a{color:var(--accent)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{color:var(--ink);text-decoration:none;padding:6px 12px;border-radius:999px;font-size:.9rem}
+nav a:hover{background:var(--accent-soft)}
+nav a[aria-current="page"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+main{padding:20px 0 48px}
+section.view{display:none}
+section.view.on{display:block}
+h1{font-size:1.9rem;line-height:1.2;margin:.2em 0 .3em}
+h2{font-size:1.35rem;margin:1.9em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:1.5em 0 .4em}
+p{margin:.5em 0}
+.lead{font-size:1.1rem;color:var(--muted);max-width:64ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin:14px 0}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.fgrid{display:grid;gap:4px 14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0;margin:14px 0}
+.callout b:first-child{display:block;margin-bottom:2px}
+.why{border-left:4px solid var(--c3);background:var(--warn-bg);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0;margin:14px 0}
+.why>b:first-child{display:block;margin-bottom:2px;color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.total td{font-weight:700;border-top:2px solid var(--line)}
+.tblwrap{overflow-x:auto}
+[data-def]{position:relative}
+.term{border-bottom:1px dotted var(--accent);cursor:help;white-space:nowrap}
+#tip{position:fixed;display:none;z-index:100;width:max-content;max-width:min(300px,calc(100vw - 16px));background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:8px;font-size:.8rem;line-height:1.4;font-weight:400;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}
+.term:focus{outline:2px solid var(--accent);outline-offset:2px}
+.src{display:inline-block;font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:999px;text-decoration:none;white-space:nowrap;vertical-align:1px;margin-left:3px}
+.src.law{background:var(--accent-soft);color:var(--accent)}
+.src.auth{background:var(--auth-bg);color:var(--auth)}
+.src.assume{background:var(--warn-bg);color:var(--warn)}
+.src.user{background:var(--ok-bg);color:var(--ok)}
+label{display:block;font-weight:600;font-size:.84rem;margin:8px 0 2px}
+label.chk{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:8px 0}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+td input[type=number]{width:92px;text-align:right}
+.out{font-variant-numeric:tabular-nums}
+.big{font-size:1.5rem;font-weight:700}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}
+.kpi{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi span{display:block;font-size:.78rem;color:var(--muted)}
+.kpi strong{font-size:1.2rem;font-variant-numeric:tabular-nums}
+.stack{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:10px 0 6px}
+.stack div{height:100%;transition:width .2s}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:4px 0;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--ink);padding:6px 14px;font:inherit;font-size:.86rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-weight:700;font-size:.9rem}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.bad{background:var(--bad-bg);color:var(--bad)}
+details{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--surface)}
+summary{cursor:pointer;font-weight:600}
+fieldset{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:6px 12px 10px}
+legend{font-weight:700;font-size:.85rem;padding:0 6px;color:var(--muted)}
+.tips li{margin:6px 0}
+.next{display:flex;justify-content:space-between;gap:10px;margin-top:30px;flex-wrap:wrap}
+.btn{display:inline-block;background:var(--accent);color:var(--on-accent);text-decoration:none;padding:9px 16px;border-radius:10px;font-weight:600;border:0;font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn:disabled{opacity:.6;cursor:progress}
+.btn.sm{padding:4px 10px;font-size:.82rem}
+footer{border-top:1px solid var(--line);background:var(--surface);padding:24px 0;font-size:.82rem;color:var(--muted)}
+footer b{color:var(--ink)}
+.flogo{display:block;max-width:200px;height:auto;margin-bottom:12px}
+.ph{color:var(--warn);background:var(--warn-bg);padding:0 5px;border-radius:4px}
+footer h3{font-size:.9rem;color:var(--ink);margin:1.2em 0 .3em}
+footer dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
+footer dt{color:var(--ink);font-weight:600}
+footer dd{margin:0;min-width:0}
+@media (max-width:560px){footer dl{grid-template-columns:1fr}footer dd{margin-bottom:6px}}
+.note{font-size:.82rem;color:var(--muted)}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding-left:38px;margin:10px 0}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.flag{color:var(--bad);font-weight:700;font-size:.8rem}
+select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{resize:vertical;min-height:110px}
+.pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.gl{margin:0}
+.gl h3{margin:0 0 4px}
+.gl .ref{font-size:.84rem;color:var(--muted);border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
+@media (max-width:560px){h1{font-size:1.5rem}.bar{gap:8px}}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#home"><img class="logo" src="data:image/png;base64,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" alt="" width="47" height="40"><span>Bank Decoded<small>Educational prototype · EU banks · Standardised Approach</small></span></a>
+    <nav aria-label="Main">
+      <a href="#home">Start</a><a href="#v1">1 Regulatory</a><a href="#v2">2 Risk</a><a href="#v3">3 Lending</a><a href="#sources">Sources</a><a href="#glossary">Glossary</a><a href="#feedback">Feedback</a><a href="#admin" id="navAdmin" hidden>Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ PROFILE (shared) ============ -->
+<details id="profile" class="card">
+  <summary>✎ Your profile — edit any number, every page updates <span id="profSum" class="note"></span></summary>
+  <p class="note">Start from a preset, then change the numbers. Everything stays in your browser. <span data-src="user"></span></p>
+  <span class="seg" role="group" aria-label="Preset">
+    <button data-preset="mila" aria-pressed="true">Mila (default)</button>
+    <button data-preset="jonas">Jonas: first-time buyer, 90% LTV</button>
+    <button data-preset="aiko">Aiko: big saver, no loans</button>
+  </span>
+  <div id="profGrid"></div>
+</details>
+
+<!-- ================= HOME ================= -->
+<section class="view" id="home">
+  <span class="tag">3 lenses · 1 customer · your numbers</span>
+  <h1>Your bank looks at you in three different ways.</h1>
+  <p class="lead">A regulator <b>counts</b> you one way. A risk manager <b>watches</b> you another way. A loan officer <b>prices</b> you a third way. Edit the profile above (or keep Mila) and see all three.</p>
+
+  <div class="card">
+    <b>How to read this site</b>
+    <ol class="steps">
+      <li><b>Edit the profile</b> above: income, deposits, loans, home value.</li>
+      <li><b>Follow the three views.</b> Each starts with a plain-language “why”, then your numbers.</li>
+      <li><b>Check any number's origin.</b> Small coloured labels show where it comes from:
+        <div style="margin-top:6px">
+          <span class="src law">Law / standard</span> fixed by EU law or an accounting standard ·
+          <span class="src auth">Set by authority</span> chosen by a regulator or supervisor, differs by country or bank ·
+          <span class="src assume">Illustrative</span> an assumption made up for this demo ·
+          <span class="src user">Your input</span>
+        </div>
+        Click any label to open the full <a href="#sources">Sources &amp; numbers</a> table.</li>
+    </ol>
+  </div>
+
+  <div class="callout"><b>The one thing to remember</b>
+    Under the Standardised Approach, a bank's <i>capital</i> rules depend on <b>what product you have</b> (and facts like loan-to-value), <b>not on your personal credit score</b>. Your personal profile still matters for <b>approval, price, provisions and monitoring</b>.</div>
+
+  <div class="grid">
+    <a class="card" href="#v1" style="text-decoration:none;color:inherit"><b>1 · Regulatory view</b><p class="note">Liquidity, risk-weighted assets, capital requirements. “Is the bank safe?”</p><span class="btn alt sm">Open</span></a>
+    <a class="card" href="#v2" style="text-decoration:none;color:inherit"><b>2 · Risk view</b><p class="note">Default, loss, behaviour and checks. “Will you repay?”</p><span class="btn alt sm">Open</span></a>
+    <a class="card" href="#v3" style="text-decoration:none;color:inherit"><b>3 · Lending view</b><p class="note">What you need to get a loan and how the rate is built. “At what price?”</p><span class="btn alt sm">Open</span></a>
+  </div>
+
+  <h2>Your profile at a glance</h2>
+  <div class="kpis" id="homeKpis"></div>
+  <div class="card"><div class="tblwrap"><table>
+    <tr><th></th><th>Regulator</th><th>Risk manager</th><th>Lender</th></tr>
+    <tr><td><b>Looks at</b></td><td>Product type and legal rules</td><td>Behaviour and ability to repay</td><td>Affordability and cost of the loan</td></tr>
+    <tr><td><b>Your mortgage</b></td><td id="hMortReg"></td><td id="hMortRisk"></td><td id="hMortLend"></td></tr>
+    <tr><td><b>Your deposits</b></td><td id="hDepReg"></td><td>Stable or flighty behaviour</td><td>Relationship pricing</td></tr>
+  </table></div></div>
+</section>
+
+<!-- ================= VIEW 1 ================= -->
+<section class="view" id="v1">
+  <span class="tag">View 1 · Regulatory</span>
+  <h1>How regulators' numbers see you</h1>
+  <p class="lead">Think of a bank as a water system. Deposits are water coming in; loans are water going out into pipes that might burst. Regulators ask two questions: <b>can the water leak out too fast?</b> (liquidity) and <b>how much of the bank's own money sits behind the pipes?</b> (capital). Each question gets a dial.</p>
+
+  <!-- ---- Dial 1 ---- -->
+  <h2>Dial 1 · Liquidity: can the bank pay people back in a crisis?</h2>
+  <div class="why"><b>Why does the regulator care?</b>
+    Banks lend long (a mortgage lasts 25 years) but most deposits can be taken out any day. In a panic, many people withdraw at once (a “bank run”). Regulators therefore make banks hold an emergency cushion of cash-like assets. The cushion is sized by assuming a share of each type of deposit leaves within <b>30 days</b>. Money that historically leaves slowly (insured, from long-standing customers) gets a low assumed share; flighty money gets a higher one.
+  </div>
+  <p>The test is called the <span class="term" tabindex="0" data-def="Liquidity Coverage Ratio: cash-like assets ÷ money that could leave in 30 days of stress. Must be at least 100%.">LCR</span> <span data-src="lcr_min"></span>. The assumed leaving share is the <span class="term" tabindex="0" data-def="The % of a deposit regulators assume could be withdrawn in the 30-day stress.">run-off rate</span>.</p>
+  <div class="card">
+    <b>Your deposits and unused credit lines</b>
+    <div>How should the bank classify your deposits? <span class="seg" role="group" aria-label="Deposit classification">
+      <button data-dep="auto" aria-pressed="true">Apply the rules to my profile</button>
+      <button data-dep="stable" aria-pressed="false">Force: all stable</button>
+      <button data-dep="less" aria-pressed="false">Force: all less stable</button>
+    </span></div>
+    <div class="tblwrap"><table id="depTable"></table></div>
+    <p class="note" id="depNote"></p>
+  </div>
+  <details><summary>The rule for “stable”</summary>
+    <p>A deposit is <b>stable (5%)</b> <span data-src="lcr_stable"></span> if it is covered by the <span class="term" tabindex="0" data-def="State-backed protection of up to €100,000 per person per bank if a bank fails.">deposit guarantee</span> (up to <b>€100,000</b> per person per bank <span data-src="dgs"></span>) <b>and</b> either your salary is paid into that account or you are an established customer. Other retail deposits get <b>10% or more</b> <span data-src="lcr_less"></span>. A deposit locked for more than about 30 days is not expected to leave in the window (0%) <span data-src="lcr_td"></span>. Unused credit lines count 5% <span data-src="lcr_undrawn"></span>, because people may draw on them in a crisis.</p></details>
+  <p class="note">LCR is measured for the whole bank, not per customer. This is a slice for illustration. Loan repayments are inflows that partly offset outflows (not shown).</p>
+
+  <h3>Stable funding: the one-year test</h3>
+  <div class="why"><b>Why a second liquidity test?</b>
+    The LCR only looks 30 days ahead. A bank could pass it and still fund 25-year mortgages with money that must be rolled over every few months. The <span class="term" tabindex="0" data-def="Net Stable Funding Ratio: is long-term lending funded by long-term money? Must be at least 100%.">NSFR</span> asks: over one year, is the <b>supply</b> of stable funding (<span class="term" tabindex="0" data-def="Available Stable Funding: how much of each funding source counts as stable.">ASF</span>) at least the <b>demand</b> for it from loans (<span class="term" tabindex="0" data-def="Required Stable Funding: how much stable funding each loan needs behind it.">RSF</span>)? <span data-src="nsfr"></span></div>
+  <div class="card"><div class="tblwrap"><table id="nsfrTable"></table></div><p id="nsfrNote"></p></div>
+
+  <!-- ---- Dial 2 ---- -->
+  <h2>Dial 2 · Risk-weighted assets: how risky is each loan?</h2>
+  <div class="why"><b>Why risk weights exist</b>
+    <p>A bank must hold its <b>own</b> money (capital) to absorb loan losses, so that losses fall on shareholders instead of depositors or taxpayers. But a €100 loan to a safe borrower and a €100 loan to a risky one should not need the same cushion. A <b>risk weight</b> scales each loan: <b>€100 × 35% = €35 of “risk-weighted assets” (RWA)</b>. Capital requirements are then a % of RWA, so lower weight means less capital needed.</p>
+    <p><b>Why fixed weights?</b> Under the Standardised Approach (SA), regulators publish the weights so every bank applies the same rule and supervisors can compare banks easily. The weights come from the global Basel standard, calibrated on historical loss data and negotiated politically, and written into EU law by the CRR. They are deliberately simple, so they describe <i>types of loans</i>, not <i>you personally</i>.</p>
+    <p><b>Analogy:</b> insurers charge by car type and age band, not by how carefully each driver actually drives.</p></div>
+
+  <h3>Where each weight comes from</h3>
+  <div class="card"><div class="tblwrap"><table>
+    <tr><th>Product</th><th class="n">Weight</th><th>Why this weight</th><th>Source</th></tr>
+    <tr><td>Mortgage, first part (up to 55% of home value)</td><td class="n">20%</td><td>If prices fall sharply and the bank must sell quickly, the home still repays this slice. Historically very low losses.</td><td><span data-src="rw_res"></span></td></tr>
+    <tr><td>Mortgage, the part above 55% of value</td><td class="n">75%</td><td>Less covered by the home, so it is weighted like an ordinary unsecured loan to a person.</td><td><span data-src="rw_res_rest"></span></td></tr>
+    <tr><td>Personal loan, revolving credit</td><td class="n">75%</td><td>“Regulatory retail”: many small loans to many people. One default barely matters and losses are fairly predictable, but nothing secures them, so they weigh more than mortgages and less than single big companies.</td><td><span data-src="rw_retail"></span></td></tr>
+    <tr><td>Card or overdraft you repay in full (“transactor”)</td><td class="n">45%</td><td>The bank lends for days at a time and rarely loses; data show far lower losses than for people who carry balances.</td><td><span data-src="rw_trans"></span></td></tr>
+    <tr><td>Unused card or overdraft limit</td><td class="n">10% counted</td><td>Not a loan yet and usually cancellable, but people often draw heavily just before trouble, so a small slice counts.</td><td><span data-src="ccf"></span></td></tr>
+    <tr><td>Loan in default</td><td class="n">100% / 150%</td><td>Losses are now likely. 150% if the bank has not yet set aside at least 20% of the loan, 100% if it has.</td><td><span data-src="rw_def"></span></td></tr>
+  </table></div></div>
+
+  <div class="card">
+    <b>Try it:</b> what if your loan-to-value (<span class="term" tabindex="0" data-def="Loan-to-value: loan ÷ property value.">LTV</span>) were different? <span class="note">(Home value <span id="ltv1Home"></span>. Your actual LTV: <span id="ltv1Actual"></span>.)</span>
+    <label for="ltv1">LTV: <span class="out" id="ltv1v"></span></label>
+    <input type="range" id="ltv1" min="20" max="110" step="1" value="70">
+    <div class="stack" id="rwStack" aria-hidden="true"></div>
+    <div class="legend"><span><i style="background:var(--c2)"></i>20% part</span><span><i style="background:var(--c3)"></i>75% part</span></div>
+    <div class="kpis">
+      <div class="kpi"><span>Loan</span><strong id="rwLoan"></strong></div>
+      <div class="kpi"><span>Risk-weighted assets</span><strong id="rwRwa"></strong></div>
+      <div class="kpi"><span>Average risk weight</span><strong id="rwAvg"></strong></div>
+      <div class="kpi"><span>CET1 the bank holds behind it (requirement + guidance)</span><strong id="rwCap"></strong></div>
+    </div>
+    <p class="note">RWA = 20% × loan up to 55% of value + 75% × the rest. Rules differ for investment property, unfinished buildings and defaulted loans.</p>
+  </div>
+
+  <div class="card">
+    <b>Your whole book, in risk-weighted assets</b>
+    <div class="tblwrap"><table id="bookTable"></table></div>
+  </div>
+
+  <!-- ---- Dial 3 ---- -->
+  <h2>Dial 3 · Capital: how much of the bank's own money must sit behind your loans?</h2>
+  <div class="why"><b>Why so many layers?</b>
+    <p>The bank's capital must be at least a % of its RWA. The law sets a base, then adds extra layers for different reasons:</p>
+    <ul style="margin:4px 0">
+      <li><b>Pillar 1 minimum</b>: the same for every bank (4.5% / 6% / 8%).</li>
+      <li><b>SREP / Pillar 2 requirement (P2R)</b>: the supervisor reviews each bank (the <span class="term" tabindex="0" data-def="Supervisory Review and Evaluation Process: the yearly check in which the supervisor looks at a bank's risks and sets extra capital for risks the minimum does not cover.">SREP</span>) and adds capital for risks the minimum misses.</li>
+      <li><b>Conservation buffer</b>: a cushion everyone must hold, meant to be <i>used</i> in bad times (if it is dipped into, dividends and bonuses are restricted).</li>
+      <li><b>Countercyclical buffer (CCyB)</b>: a national authority raises it when credit is growing too fast (build up in good times, release in bad times).</li>
+      <li><b>Systemic risk buffer (SyRB)</b>: a national add-on for structural risks, e.g. a very concentrated or property-heavy economy.</li>
+      <li><b>O-SII / G-SII buffer</b>: extra for banks so big that their failure would damage the economy.</li>
+      <li><b>Pillar 2 guidance (P2G)</b>: the supervisor's “please keep this extra”. Not binding, but banks stay above it.</li>
+    </ul></div>
+  <p>Change any ratio below. The “standard” column shows what the law fixes, or the usual range when an authority chooses. <span class="flag">⚠</span> marks a value you changed away from a legally fixed number.</p>
+  <div class="card">
+    <div class="tblwrap"><table id="capTable"></table></div>
+    <p><button class="btn alt sm" id="capReset">Reset to illustrative defaults</button></p>
+  </div>
+
+  <div class="card">
+    <b>Total capital requirement</b>
+    <div class="tblwrap"><table id="capSum"></table></div>
+    <h3>The same requirement as a sum (total-capital basis)</h3>
+    <div class="tblwrap"><table id="capBuild"></table></div>
+    <p class="note" id="capBuildNote"></p>
+    <h3>CET1 stack, as % of RWA</h3>
+    <div class="stack" id="capStack" aria-hidden="true"></div>
+    <div class="legend" id="capLegend"></div>
+    <p class="note" id="capNote"></p>
+    <p class="note" id="levNote"></p>
+  </div>
+  <div class="callout"><b>How the terms fit together (EBA wording)</b>
+    <b>TSCR</b> (total SREP capital requirement) = Pillar 1 + P2R. <b>CBR</b> (combined buffer requirement) = conservation + CCyB + SyRB + O-SII/G-SII. <b>OCR</b> (overall capital requirement) = TSCR + CBR. Below the OCR, the bank faces automatic limits on dividends and bonuses (<span class="term" tabindex="0" data-def="Maximum Distributable Amount: the cap on dividends, bonuses and similar payouts when a bank's capital falls into its buffers.">MDA</span>). <span data-src="tscr"></span></div>
+
+  <h2>What this means for you</h2>
+  <ul class="tips">
+    <li><b>Staying put is valued.</b> A salary account, a long relationship and an insured balance make your money “stable”.</li>
+    <li><b>Mind the €100,000 limit</b> per bank if safety matters. Above it, money is uninsured and treated as less stable. Try Aiko's preset.</li>
+    <li><b>A bigger down payment lowers the bank's capital need.</b> Try Jonas's preset and compare the average risk weight.</li>
+    <li><b>Pay cards in full.</b> “Transactors” carry a lower risk weight. Whether a bank passes that on varies.</li>
+    <li><b>Unused limits are not free for the bank.</b> They count as potential exposure.</li>
+  </ul>
+  <div class="next"><a class="btn alt" href="#home">← Start</a><a class="btn" href="#v2">Next: the risk view →</a></div>
+</section>
+
+<!-- ================= VIEW 2 ================= -->
+<section class="view" id="v2">
+  <span class="tag">View 2 · Risk</span>
+  <h1>How the bank sees you as a source of risk</h1>
+  <p class="lead">View 1 is what the regulator <i>counts</i>. View 2 is what the bank <i>watches</i>: will you repay, how do you behave, and is everything above board?</p>
+  <div class="callout"><b>Capital vs. the bank's own view</b>The Standardised Approach gives similar loans the same fixed weight (View 1). But banks still estimate <i>your</i> chance of default for approval, pricing, monitoring and accounting provisions (IFRS 9). That is what this page shows.</div>
+
+  <h2>Credit risk: PD, LGD and EAD</h2>
+  <div class="why"><b>The bike-lending test</b>
+    You lend a friend your bike. <b>PD</b> (probability of default): how likely is it that it never comes back? <b>EAD</b> (exposure at default): what is it worth? <b>LGD</b> (loss given default): if it goes missing, what share of its value do you lose after anything you recover? <b>Expected loss = PD × LGD × EAD.</b>
+    <p><b>PD is a probability: it can be anything from 0% to 100%.</b> Mortgages to stable borrowers: often well under 1%. Unsecured consumer loans: typically 1–5%. Risky or already-troubled loans: tens of percent. At 100% the default has effectively happened (IFRS 9 stage 3). <span data-src="pdlgd"></span></p></div>
+  <div class="card">
+    <b>Playground: any loan</b>
+    <div class="fgrid">
+      <div><label for="pgPDn">PD (% chance of default within 12 months)</label><input type="number" id="pgPDn" min="0" max="100" step="0.1" value="3"><input type="range" id="pgPD" min="0" max="100" step="0.5" value="3" aria-label="PD slider"></div>
+      <div><label for="pgLGDn">LGD (% lost if it defaults)</label><input type="number" id="pgLGDn" min="0" max="100" step="1" value="65"><input type="range" id="pgLGD" min="0" max="100" step="1" value="65" aria-label="LGD slider"></div>
+      <div><label for="pgEADn">EAD (€ owed at default)</label><input type="number" id="pgEADn" min="0" step="500" value="10000"><input type="range" id="pgEAD" min="0" max="500000" step="1000" value="10000" aria-label="EAD slider"></div>
+    </div>
+    <div class="kpis"><div class="kpi"><span>Expected loss over the year</span><strong id="pgEL"></strong></div><div class="kpi"><span>As % of the loan</span><strong id="pgELp"></strong></div></div>
+    <p class="note" id="pgNote"></p>
+  </div>
+
+  <h3>Your products</h3>
+  <p class="note">PD and LGD start from rule-of-thumb values (editable); EAD comes from your profile. In the Standardised Approach, external credit ratings apply to companies, banks and governments, not to individuals. Collateral (like a home) lowers LGD.</p>
+  <div class="card">
+    <div class="tblwrap"><table id="elTable"></table></div>
+    <p><button class="btn alt sm" id="elReset">Reset PD/LGD to rule-of-thumb values</button></p>
+  </div>
+
+  <h2>Slip-up simulator</h2>
+  <div class="why"><b>Why stages?</b> Under <span class="term" tabindex="0" data-def="The accounting standard that makes banks set aside money for expected loan losses.">IFRS 9</span>, banks must set aside money for losses <i>before</i> they happen, in three stages: <b>1</b> normal loans (expected loss over 12 months), <b>2</b> credit risk has risen significantly (30+ days late is the standard backstop <span data-src="ifrs_s2"></span>), expected loss over the <b>whole remaining life</b>, <b>3</b> credit-impaired, usually 90+ days late <span data-src="ifrs_s3"></span> (the same 90 days appear in the EU definition of default <span data-src="def90"></span>).</div>
+  <div class="card" id="slipCard">
+    <p id="slipIntro"></p>
+    <div id="slipBody">
+      <label for="late">Days late: <span class="out" id="latev"></span></label>
+      <input type="range" id="late" min="0" max="120" step="1" value="0">
+      <label for="lifePD">Lifetime PD used in stage 2 (%) <span data-src="lifetime"></span></label>
+      <input type="number" id="lifePD" min="0" max="100" step="0.5" style="max-width:140px">
+      <p><span class="badge ok" id="stageBadge"></span></p>
+      <div class="kpis">
+        <div class="kpi"><span>Provision the bank sets aside</span><strong id="prov"></strong></div>
+        <div class="kpi"><span>Calculated as</span><strong id="provBasis" style="font-size:.95rem"></strong></div>
+        <div class="kpi"><span>Risk-weighted assets of this loan</span><strong id="provRwa" style="font-size:1rem"></strong></div>
+      </div>
+      <p id="stageText"></p>
+    </div>
+  </div>
+
+  <h2>Collateral: why the home matters</h2>
+  <div class="card"><div class="tblwrap"><table>
+    <tr><th>LTV</th><th class="n">Rough LGD</th><th>Why</th></tr>
+    <tr><td>50%</td><td class="n">~5%</td><td>Prices can halve and the loan is still covered</td></tr>
+    <tr><td>70%</td><td class="n">~10%</td><td>Big cushion after a discounted forced sale</td></tr>
+    <tr><td>90%</td><td class="n">~20%</td><td>Small cushion</td></tr>
+    <tr><td>100%+</td><td class="n">30%+</td><td>A loss is likely if prices fall</td></tr>
+  </table></div>
+  <p class="note">Illustrative <span data-src="pdlgd"></span>. Banks assume a forced sale below market value plus legal and holding costs. <b>Your LTV: <span id="colLtv"></span> → rough LGD <span id="colLgd"></span>.</b> Credit risk mitigation rules (collateral, guarantees) are in CRR Arts 192–241.</p></div>
+
+  <h2>Behaviour and concentration</h2>
+  <div class="grid">
+    <div class="card"><span class="badge bad">▲ Early warning</span><p>Regular overdraft use, salary stops arriving, card at its limit with minimum payments. The bank may lower limits, reach out or tighten lending.</p></div>
+    <div class="card"><span class="badge warn">● Watch</span><p>Several credit applications close together; large sudden withdrawals; chasing the best savings rate (money treated as less stable).</p></div>
+    <div class="card"><span class="badge ok">✓ Reassuring</span><p>On-time payments, savings buffer, card paid in full, long relationship with salary paid in.</p></div>
+  </div>
+  <details><summary>Early repayment and concentration</summary>
+    <p><b>Early repayment</b> costs the bank interest it planned to earn. Fees must be fair: for mortgages not above the bank's financial loss (national caps apply) <span data-src="mcd_early"></span>; for consumer loans generally capped at 1% of the amount repaid early (0.5% if under a year remains) <span data-src="early"></span>.</p>
+    <p><b>Concentration</b>: a bank with mostly mortgages in one country is exposed to that housing market. It may tighten rules even if you personally are fine. Retail portfolios must stay diversified to keep the 75% weight.</p></details>
+
+  <h2>Operational, conduct and anti-money-laundering checks</h2>
+  <div class="card"><div class="tblwrap"><table>
+    <tr><th>Risk</th><th>What the bank does</th><th>What helps</th></tr>
+    <tr><td><span class="term" tabindex="0" data-def="Know Your Customer: proving who you are, where your money comes from and why you bank here.">KYC</span> / ID</td><td>Verifies identity and address; asks about work and purpose</td><td>Consistent documents, honest answers</td></tr>
+    <tr><td>Source of funds</td><td>Asks where large deposits or down payments came from</td><td>Keep payslips, sale contracts, gift letters</td></tr>
+    <tr><td>Transaction monitoring</td><td>Software flags unusual patterns: sudden large cash, transfers split just under limits, quick in-and-out flows</td><td>Explain big or unusual items</td></tr>
+    <tr><td>Customer risk rating</td><td>Low / medium / high; higher for public officials and complex structures</td><td>Transparent, salaried flows</td></tr>
+    <tr><td>Conduct</td><td>Must explain products clearly and treat borrowers in difficulty fairly</td><td>Use your pre-contract information and right to think it over</td></tr>
+  </table></div></div>
+  <p class="note">If a bank reports suspicious activity to the authorities, the law forbids telling you. It can feel unfair, but it is required.</p>
+
+  <h2>What this means for you</h2>
+  <ul class="tips">
+    <li><b>Payment history is your strongest signal.</b> Use direct debits. One 30-day delay can push a loan into stage 2.</li>
+    <li><b>A savings cushion</b> of 3 to 6 months of expenses lowers perceived risk even if untouched.</li>
+    <li><b>Use credit as a tool, not a lifeline.</b> Persistent overdraft use is an early stress signal.</li>
+    <li><b>Talk early if you struggle.</b> Banks are expected to offer help. Waiting until day 90 costs both sides more.</li>
+    <li><b>Expect routine KYC questions</b> and keep documents for large sums.</li>
+  </ul>
+  <div class="next"><a class="btn alt" href="#v1">← Regulatory view</a><a class="btn" href="#v3">Next: the lending view →</a></div>
+</section>
+
+<!-- ================= VIEW 3 ================= -->
+<section class="view" id="v3">
+  <span class="tag">View 3 · Lending</span>
+  <h1>What it takes to get a loan, and how your rate is set</h1>
+  <p class="lead">Two questions: <b>can you afford it, and is the paperwork right?</b> (approval) and <b>what does lending to you cost the bank, plus profit?</b> (price). Like a taxi fare: fuel, risk of breakdown, the car's cost, the driver's wage and a small profit.</p>
+
+  <h2>Part 1 · What the bank needs from you</h2>
+  <div class="card"><ol class="steps">
+    <li><b>Decide and pre-check.</b> Compare offers using the standard European information sheet (ESIS for mortgages, SECCI for consumer loans).</li>
+    <li><b>Documents.</b> ID, proof of address, last 3 payslips (self-employed: 2 to 3 years of accounts), employment contract, 3 to 6 months of statements, list of debts. Mortgage: purchase contract, valuation, proof of down payment, insurance.</li>
+    <li><b>Identity and checks.</b> KYC, anti-money-laundering, credit-register search.</li>
+    <li><b>Affordability.</b> Income against expenses and debts, plus an interest-rate stress test.</li>
+    <li><b>Collateral.</b> Independent valuation; check LTV against bank and national limits.</li>
+    <li><b>Decision and offer.</b> You can ask for human review of an automated consumer-credit decision.</li>
+    <li><b>Signing and after.</b> Funds released, monitoring, early-repayment rights, help if you struggle.</li>
+  </ol></div>
+  <p class="note">The legal duty to assess whether you can repay comes from the Mortgage Credit Directive and CCD2 <span data-src="assess"></span>; EBA guidelines on loan origination explain how. The assessment must focus on repayment from income, not only on the home's value. There is <b>no EU-wide LTV or debt-to-income limit</b>; those are national or bank rules, so check your country.</p>
+
+  <h3>Can you afford it?</h3>
+  <div class="why"><b>Why stress-test?</b> Rates can rise during a 25-year loan. Banks must consider that, so they test whether you could still pay at a higher rate <span data-src="stress"></span>.</div>
+  <div class="card">
+    <p class="note">Fields start from your profile. Change any of them.</p>
+    <div class="fgrid">
+      <div><label for="aInc">Net monthly income (€)</label><input type="number" id="aInc" min="0" step="50"></div>
+      <div><label for="aDebt">Other monthly debt payments (€)</label><input type="number" id="aDebt" min="0" step="10"></div>
+      <div><label for="aLive">Living-cost benchmark (€) <span data-src="living"></span></label><input type="number" id="aLive" min="0" step="50"></div>
+      <div><label for="aLoan">Loan applied for (€)</label><input type="number" id="aLoan" min="0" step="5000"></div>
+      <div><label for="aRate">Interest rate (%)</label><input type="number" id="aRate" min="0" step="0.1"></div>
+      <div><label for="aYrs">Years</label><input type="number" id="aYrs" min="1" max="40" step="1"></div>
+      <div><label for="aLim1">Bank limit: DSTI now (%) <span data-src="dsti"></span></label><input type="number" id="aLim1" min="0" max="100" step="1" value="42"></div>
+      <div><label for="aLim2">Bank limit: DSTI under stress (%)</label><input type="number" id="aLim2" min="0" max="100" step="1" value="50"></div>
+    </div>
+    <p class="note" id="aDebtNote"></p>
+    <label for="aStress">Stress test: rate rises by <span class="out" id="aStressV"></span></label>
+    <input type="range" id="aStress" min="0" max="4" step="0.5" value="2">
+    <div class="kpis">
+      <div class="kpi"><span>Monthly payment</span><strong id="aPay"></strong></div>
+      <div class="kpi"><span><span class="term" tabindex="0" data-def="Debt-service-to-income: monthly debt payments ÷ monthly income.">DSTI</span> now</span><strong id="aD1"></strong></div>
+      <div class="kpi"><span>Left after living costs</span><strong id="aR1"></strong></div>
+      <div class="kpi"><span>DSTI under stress</span><strong id="aD2"></strong></div>
+      <div class="kpi"><span>Left under stress</span><strong id="aR2"></strong></div>
+    </div>
+    <p><span class="badge ok" id="aBadge"></span></p>
+    <p class="note" id="aText"></p>
+  </div>
+
+  <h2>Part 2 · How the bank builds your rate</h2>
+  <div class="why"><b>Why a formula?</b> A loan costs the bank money in six ways. The rate has to cover all of them, and competition decides how much profit is left.</div>
+  <p><b>Rate = funding cost + liquidity premium + expected loss + capital cost + operating cost + margin.</b></p>
+  <div class="card">
+    <span class="seg" role="group" aria-label="Product">
+      <button id="pMort" aria-pressed="true">Mortgage</button>
+      <button id="pLoan" aria-pressed="false">Personal loan</button>
+    </span>
+    <div id="mortCtl">
+      <label for="ltv3">LTV: <span class="out" id="ltv3v"></span> <span class="note">(your actual: <span id="ltv3Actual"></span>)</span></label>
+      <input type="range" id="ltv3" min="20" max="110" step="1" value="70">
+      <div class="fgrid">
+        <div><label for="rM_pd">PD (%) <span data-src="pdlgd"></span></label><input type="number" id="rM_pd" min="0" max="100" step="0.05"></div>
+        <div><label for="rM_lgd">LGD (%)</label><input type="number" id="rM_lgd" min="0" max="100" step="1"></div>
+      </div>
+    </div>
+    <div id="loanCtl" hidden>
+      <div class="fgrid">
+        <div><label for="rL_pd">PD (%): from 0 to 100</label><input type="number" id="rL_pd" min="0" max="100" step="0.1" value="3"><input type="range" id="rL_pdr" min="0" max="100" step="0.5" value="3" aria-label="PD slider"></div>
+        <div><label for="rL_lgd">LGD (%)</label><input type="number" id="rL_lgd" min="0" max="100" step="1" value="65"></div>
+      </div>
+    </div>
+    <details><summary>Bank assumptions (editable)</summary>
+      <div class="fgrid">
+        <div><label for="fnd">Funding cost (%) <span data-src="funding"></span></label><input type="number" id="fnd" step="0.05"></div>
+        <div><label for="liq">Liquidity premium (%) <span data-src="liq"></span></label><input type="number" id="liq" step="0.05"></div>
+        <div><label for="opx">Operating cost (%) <span data-src="opex"></span></label><input type="number" id="opx" step="0.05"></div>
+        <div><label for="mrg">Margin / competition (%) <span data-src="margin"></span></label><input type="number" id="mrg" step="0.05"></div>
+        <div><label for="coe">Shareholders' required return, cost of equity (%) <span data-src="coe"></span></label><input type="number" id="coe" step="0.5" value="11"></div>
+      </div>
+      <p class="note">The CET1 ratio used for capital cost (<span id="rateCet1"></span>) is the CET1 requirement plus guidance from the capital table in View 1.</p>
+    </details>
+    <div class="kpis"><div class="kpi"><span>Indicative customer rate</span><strong id="rateTot" class="big"></strong></div><div class="kpi"><span>Risk weight used</span><strong id="rateRw"></strong></div><div class="kpi"><span>Capital held per €100 lent</span><strong id="rateCap"></strong></div></div>
+    <div class="stack" id="rateStack" aria-hidden="true"></div>
+    <div class="legend" id="rateLegend"></div>
+    <div class="tblwrap"><table id="rateTable"></table></div>
+    <p class="note" id="rateNote"></p>
+  </div>
+
+  <h2>Part 3 · Where the Standardised Approach comes in</h2>
+  <div class="card" id="capCostCard"></div>
+  <div class="callout"><b>Why the same risk weight can still mean different prices</b>The Standardised Approach gives all regulatory-retail borrowers 75%. So a safer borrower doesn't need less capital, but has lower expected loss. Banks add their own view of your risk in the price. In personal-loan mode, move the PD: the capital cost stays fixed while the rate moves.</div>
+  <ol>
+    <li><b>Risk weight drives price.</b> Higher LTV → more capital → higher rate.</li>
+    <li><b>Capital is rationed.</b> Loans that use a lot of capital for thin margins may be priced up or limited.</li>
+    <li><b>Deposits can lower your price.</b> Stable deposits are cheap funding that also helps the liquidity ratios, so banks may reward salary and savings with a small discount.</li>
+  </ol>
+  <details><summary>Other price factors</summary>
+    <p><b>Competition</b> squeezes margins. <b>Fixed rates</b> follow swap rates for the fixed period; <b>variable rates</b> follow Euribor plus a margin. <b>Fees</b> are spread over the loan's life in the bank's accounts, so fee and rate can trade off. <b>Early-repayment fees</b> reflect the cost of unwinding funding. <b>Energy-efficient homes</b> may get discounts as a bank choice, not an automatic capital discount.</p></details>
+
+  <h2>What this means for you</h2>
+  <ul class="tips">
+    <li><b>Run your own stress test first.</b> Can you pay if the rate is 2 points higher? Banks check.</li>
+    <li><b>Gather documents before applying.</b> Missing papers are the most common delay.</li>
+    <li><b>Bigger down payment, lower LTV, cheaper loan.</b> Compare offers by APRC (mortgages) or APR (consumer loans), which include fees.</li>
+    <li><b>Ask what your relationship earns you</b> (salary account, savings, insurance). Get it in writing and check what you'd lose by cancelling a product.</li>
+    <li><b>Don't hide debts or income issues.</b> Credit registers make it likely to be found.</li>
+    <li><b>You can request human review</b> of an automated consumer-credit decision.</li>
+  </ul>
+  <div class="next"><a class="btn alt" href="#v2">← Risk view</a><a class="btn" href="#sources">Sources &amp; numbers →</a></div>
+</section>
+
+<!-- ================= SOURCES ================= -->
+<section class="view" id="sources">
+  <span class="tag">Sources &amp; numbers</span>
+  <h1>Where every number comes from</h1>
+  <p class="lead">Every figure on this site is one of four kinds. Article numbers are given to the best of our knowledge and must be checked against the official text before publishing.</p>
+  <div class="card">
+    <span class="src law">Law / standard</span> fixed by EU law or an accounting standard.<br>
+    <span class="src auth">Set by authority</span> chosen by a national authority or a supervisor, so it differs by country or by bank.<br>
+    <span class="src assume">Illustrative</span> an assumption made up for this demo; real banks use their own.<br>
+    <span class="src user">Your input</span> the profile you entered.
+  </div>
+  <div id="srcTable"></div>
+  <div class="callout"><b>Not legal advice</b>EU legislation is amended often (CRR3 applied from 1 Jan 2025; CRD VI mostly from 11 Jan 2026; CCD2 from 20 Nov 2026; the AML Regulation from 10 Jul 2027). Always check the consolidated text on EUR-Lex and your national implementing law.</div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section class="view" id="glossary">
+  <span class="tag">Glossary</span>
+  <h1>Plain-language glossary, with the legal source</h1>
+  <p class="lead">Each entry has a plain explanation first, then where the legal (or accounting) definition lives. Where there is no legal definition, we say so.</p>
+  <label for="gSearch">Search</label>
+  <input type="text" id="gSearch" placeholder="e.g. LTV, buffer, default" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit">
+  <div id="gList"></div>
+</section>
+
+<!-- ================= FEEDBACK ================= -->
+<section class="view" id="feedback">
+  <span class="tag">Feedback</span>
+  <h1>What should we add?</h1>
+  <p class="lead">Tell us what is missing, unclear or wrong. One idea per message works best.</p>
+  <p class="note" id="fbWho" role="status"></p>
+  <div class="card">
+    <p id="fbState" class="note" hidden></p>
+    <form id="fbForm">
+      <label for="fbCat">Type</label>
+      <select id="fbCat">
+        <option value="new">New feature or topic</option>
+        <option value="explain">Clearer explanation</option>
+        <option value="fix">Correction</option>
+        <option value="other">Other</option>
+      </select>
+      <label for="fbText">Your idea</label>
+      <textarea id="fbText" maxlength="1000" required></textarea>
+      <p class="note"><span id="fbLen">0</span> / 1000 characters</p>
+      <button class="btn" type="submit" id="fbSubmit">Send idea</button>
+      <p id="fbStatus" class="note" role="status"></p>
+    </form>
+    <p class="note">Your ideas are stored with your claude.ai account. Only you and the site owner can see them. The owner sees the text and your display name, and may reply here. Do not include personal or financial details.</p>
+  </div>
+  <div id="fbMine" hidden>
+    <h2>Your ideas and replies</h2>
+    <div id="fbMineList"></div>
+  </div>
+</section>
+
+<!-- ================= ADMIN ================= -->
+<section class="view" id="admin">
+  <span class="tag">Admin</span>
+  <h1>Feedback inbox</h1>
+  <p class="note" id="adSummary">Loading…</p>
+  <span class="seg" role="group" aria-label="Filter">
+    <button data-ad="all" aria-pressed="true">All</button>
+    <button data-ad="new" aria-pressed="false">Not replied</button>
+    <button data-ad="done" aria-pressed="false">Replied</button>
+  </span>
+  <div id="adList"></div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <img class="flogo" src="data:image/png;base64,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" alt="Bank Decoded" width="200" height="125">
+    <p><b>Educational information only. Not financial, legal, tax or investment advice.</b>
+    Bank Decoded explains, in simplified form, how banks in the EU that use the Standardised Approach may analyse customers and loans. We do not describe any specific bank, and no bank endorses or is affiliated with this site. All profiles, figures, rates and outcomes are fictional or illustrative. Rules vary by country and change over time, so the regulatory references may be incomplete or out of date. For decisions about your finances, consult an independent adviser or your national consumer authority.</p>
+    <p>© 2026 Bank Decoded. All rights reserved. The Bank Decoded name and logo belong to Bank Decoded. Last reviewed: <span class="ph">[DD/MM/YYYY]</span> · Regulation as of: <span class="ph">[DD/MM/YYYY]</span></p>
+
+    <details class="legal" open>
+      <summary>Legal notice, privacy and cookies</summary>
+
+      <h3>Owner and operator of this website</h3>
+      <dl>
+        <dt>Owner</dt><dd><b>Bank Decoded</b>, <span class="ph">[legal form, e.g. company type]</span></dd>
+        <dt>Registered address</dt><dd><span class="ph">[street, postcode, city, country]</span></dd>
+        <dt>Contact</dt><dd><span class="ph">[email address]</span> · <span class="ph">[phone, optional]</span></dd>
+        <dt>Registration</dt><dd><span class="ph">[commercial register and number]</span></dd>
+        <dt>VAT ID</dt><dd><span class="ph">[VAT number, if any]</span></dd>
+        <dt>Responsible for content</dt><dd><span class="ph">[full name]</span></dd>
+        <dt>Regulatory status</dt><dd>Bank Decoded is an educational publisher. It is not a bank, credit institution, payment institution or financial adviser, and is not authorised or supervised by a financial regulator. <span class="ph">[confirm]</span></dd>
+        <dt>Governing law</dt><dd><span class="ph">[country whose law applies]</span></dd>
+      </dl>
+
+      <h3>Liability and links</h3>
+      <p>We take care with the content but give no guarantee that it is complete, correct or current. To the extent the law allows, Bank Decoded is not liable for decisions made on the basis of this site. Links to other websites, such as EUR-Lex, lead to content we do not control.</p>
+
+      <h3>Privacy</h3>
+      <p>Bank Decoded is the controller of personal data processed through this site under the General Data Protection Regulation (EU) 2016/679. The calculators run in your browser. The numbers you enter in the profile are not sent to us and are not stored.</p>
+      <p>If you send feedback, we store your message, the type you chose, the date, your claude.ai account identifier and your display name. We use them only to read and reply to your idea. Legal basis: your consent, given by sending the form (Art. 6(1)(a) GDPR). Only you and Bank Decoded can see your submission. We keep it until we delete it or you ask us to. The data is stored with the platform provider Anthropic (claude.ai). <span class="ph">[confirm provider and transfer terms]</span></p>
+      <p>You can ask us to show, correct or delete your data, restrict or object to its use, or withdraw consent at any time, by writing to <span class="ph">[privacy email]</span>. You can also complain to your national data protection authority.</p>
+
+      <h3>Cookies</h3>
+      <p>This site sets no cookies and uses no analytics or advertising trackers. <span class="ph">[confirm before hosting elsewhere]</span></p>
+    </details>
+  </div>
+</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:0;};
+const eur=n=>'€'+Math.round(n).toLocaleString('en-IE');
+const pc=(n,d=1)=>n.toFixed(d)+'%';
+const lerp=(x,pts)=>{if(x<=pts[0][0])return pts[0][1];for(let i=1;i<pts.length;i++){if(x<=pts[i][0]){const[x0,y0]=pts[i-1],[x1,y1]=pts[i];return y0+(y1-y0)*(x-x0)/(x1-x0);}}return pts[pts.length-1][1];};
+const pmt=(P,r,y)=>{if(P<=0)return 0;const i=r/1200,n=Math.max(1,y)*12;return i===0?P/n:P*i/(1-Math.pow(1+i,-n));};
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+// rule-of-thumb mortgage PD (%) and LGD (%) by LTV (%)
+const autoPD=l=>lerp(l,[[50,.3],[70,.5],[90,.8],[100,1.2],[130,2.5]]);
+const autoLGD=l=>lerp(l,[[50,5],[70,10],[90,20],[100,30],[130,45]]);
+
+/* ================= SOURCES REGISTRY ================= */
+const U={
+ CRR:'https://eur-lex.europa.eu/eli/reg/2013/575/oj',CRD:'https://eur-lex.europa.eu/eli/dir/2013/36/oj',
+ LCR:'https://eur-lex.europa.eu/eli/reg_del/2015/61/oj',DGS:'https://eur-lex.europa.eu/eli/dir/2014/49/oj',
+ MCD:'https://eur-lex.europa.eu/eli/dir/2014/17/oj',CCD2:'https://eur-lex.europa.eu/eli/dir/2023/2225/oj',
+ AMLD:'https://eur-lex.europa.eu/eli/dir/2015/849/oj',AMLR:'https://eur-lex.europa.eu/eli/reg/2024/1624/oj',
+ IFRS9:'https://www.ifrs.org/issued-standards/list-of-standards/ifrs-9-financial-instruments/',EBA:'https://www.eba.europa.eu/'
+};
+// id: [item, value, type, short label, full reference, url, note]
+const SRC={
+ rw_retail:['Retail risk weight','75%','law','CRR Art 123','Regulation (EU) 575/2013 (CRR) Art 123, as amended by CRR3 (EU) 2024/1623',U.CRR,'Regulatory retail: small loans to individuals/SMEs, diversified portfolio.'],
+ rw_trans:['Transactor risk weight','45%','law','CRR Art 123','CRR Art 123 as amended by CRR3',U.CRR,'Card/overdraft balance fully repaid at each scheduled date over the previous 12 months (overdraft: not drawn for 12 months).'],
+ rw_res:['Mortgage: part of loan up to 55% of property value','20%','law','CRR Art 125','CRR Art 125 as amended by CRR3 (loan-splitting)',U.CRR,'Residential property, loan-splitting approach.'],
+ rw_res_rest:['Mortgage: rest of the loan','75% (counterparty weight)','law','CRR Art 125','CRR Art 125 as amended by CRR3',U.CRR,'Counterparty’s own weight; for a retail individual 75%. Reviewer: confirm exact Art 125 wording.'],
+ ccf:['Unused card/overdraft limit counted as drawn','10%','law','CRR Art 111','CRR Art 111 (off-balance-sheet items, credit conversion factors) as amended by CRR3',U.CRR,'For commitments the bank can cancel unconditionally.'],
+ rw_def:['Defaulted loan risk weight','100% or 150%','law','CRR Art 127','CRR Art 127 (exposures in default)',U.CRR,'150% if specific provisions are under 20% of the exposure, else 100%.'],
+ cap_min:['Pillar 1 minimum capital','4.5% CET1 / 6% Tier 1 / 8% Total','law','CRR Art 92','CRR Art 92(1)',U.CRR,'As % of risk-weighted assets.'],
+ lev:['Leverage ratio minimum','3%','law','CRR Art 92','CRR Art 92(1)(d) and Art 429',U.CRR,'Tier 1 ÷ total exposure with no risk weights.'],
+ ccb:['Capital conservation buffer','2.5%','law','CRD Art 129','Directive 2013/36/EU (CRD) Art 129',U.CRD,'Fixed at 2.5% CET1.'],
+ ccyb:['Countercyclical capital buffer','0–2.5% typical (default here 1.0%)','auth','CRD Art 130','CRD Art 130 and 136',U.CRD,'Set quarterly by each country’s designated authority; can exceed 2.5%. Illustrative default.'],
+ syrb:['Systemic risk buffer','0–3% typical (default here 0.5%)','auth','CRD Art 133','CRD Art 133',U.CRD,'National choice, in 0.5% steps; many countries use 0%. Illustrative default.'],
+ osii:['O-SII / G-SII buffer','O-SII 0–3%, G-SII 1–3.5% (default here 1.0%)','auth','CRD Art 131','CRD Art 131',U.CRD,'Only for large, systemically important banks. Illustrative default.'],
+ p2r:['Pillar 2 requirement (SREP)','Bank-specific, ~1–3% typical (default here 2.0%)','auth','CRD Art 104a','CRD Art 104a (composition: at least 56% CET1, 75% Tier 1); SREP: CRD Art 97',U.CRD,'Set by the supervisor after the yearly SREP. Illustrative default.'],
+ p2g:['Pillar 2 guidance','Bank-specific (default here 1.0%)','auth','CRD Art 104b','CRD Art 104b',U.CRD,'Not legally binding; held in CET1. Illustrative default.'],
+ tscr:['TSCR, CBR, OCR terms','—','auth','EBA SREP GL','EBA Guidelines on common SREP procedures (EBA/GL/2022/03)',U.EBA,'Terminology used by supervisors; MDA: CRD Art 141.'],
+ lcr_min:['LCR minimum','100%','law','CRR Art 412','CRR Art 412; detail in Delegated Regulation (EU) 2015/61',U.CRR,''],
+ lcr_stable:['Stable retail deposit run-off','5%','law','Del. Reg. 2015/61','Commission Delegated Regulation (EU) 2015/61 (retail deposits outflows)',U.LCR,'Insured and (salary account or established relationship).'],
+ lcr_less:['Other retail deposit run-off','10% minimum (higher can apply)','law','Del. Reg. 2015/61','Delegated Regulation (EU) 2015/61',U.LCR,''],
+ lcr_td:['Locked term deposit','0% in the 30-day window','law','Del. Reg. 2015/61','Delegated Regulation (EU) 2015/61',U.LCR,'Applies where it cannot be withdrawn within 30 days, or only with a penalty greater than the lost interest.'],
+ lcr_undrawn:['Unused retail credit lines','5%','law','Del. Reg. 2015/61','Delegated Regulation (EU) 2015/61',U.LCR,'Share assumed drawn in the stress.'],
+ dgs:['Deposit guarantee','€100,000 per person per bank','law','DGSD Art 6','Directive 2014/49/EU Art 6',U.DGS,''],
+ nsfr:['NSFR minimum and factors','100%; 95% / 90% / 100% (supply); 65% / 85% / 50% (demand)','law','CRR Part Six Tit. IV','CRR Part Six, Title IV (NSFR), Arts 428a onwards',U.CRR,'Stable retail deposit 95%, other retail 90%, term deposit ≥1 year 100%. Mortgage with risk weight ≤35% and >1 yr left: 65% (otherwise 85%); other retail loans >1 yr: 85%; <1 yr: 50%. Reviewer: confirm the 35% test after CRR3.'],
+ def90:['Default after 90 days past due','90 days','law','CRR Art 178','CRR Art 178; EBA Guidelines EBA/GL/2016/07',U.CRR,'Above materiality thresholds, or if the bank judges the borrower unlikely to pay.'],
+ ifrs_s2:['IFRS 9 stage 2 backstop','30 days past due','law','IFRS 9 ¶5.5.11','IFRS 9 paragraphs 5.5.3 and 5.5.11',U.IFRS9,'Rebuttable presumption of significant increase in credit risk.'],
+ ifrs_s3:['IFRS 9 stage 3 / default','90 days past due','law','IFRS 9 B5.5.37','IFRS 9 Appendix A (credit-impaired) and B5.5.37',U.IFRS9,'Rebuttable presumption that default occurs at 90 days past due.'],
+ early:['Consumer-loan early repayment compensation','Max 1% (0.5% if under 1 year left)','law','CCD2','Directive (EU) 2023/2225 (CCD2), early repayment provisions',U.CCD2,'Applies from 20 Nov 2026 in national law.'],
+ mcd_early:['Mortgage early repayment compensation','Not above the lender’s financial loss','law','MCD Art 25','Directive 2014/17/EU Art 25',U.MCD,'Member states may set stricter caps.'],
+ assess:['Duty to assess creditworthiness','—','law','MCD Art 18 / CCD2','MCD Art 18; CCD2 creditworthiness assessment provisions; EBA/GL/2020/06',U.MCD,''],
+ stress:['+2 percentage-point stress test','Slider, default +2 pp','assume','EBA/GL/2020/06','EBA Guidelines on loan origination and monitoring (EBA/GL/2020/06) require considering rate rises; size is a bank/national choice',U.EBA,''],
+ dsti:['Debt-service-to-income limits','42% now / 50% stress','assume','Illustrative','No EU-wide limit. Set by national macroprudential rules and bank policy',U.EBA,'Edit the limits in the calculator.'],
+ living:['Living-cost benchmark','€1,100','assume','Illustrative','Banks use national statistical budgets or household-size benchmarks',U.EBA,''],
+ cardpay:['Card payment assumed in affordability','2% of limit','assume','Illustrative','Bank policy',U.EBA,''],
+ pdlgd:['Rule-of-thumb PD and LGD','Mortgage PD 0.3–1.2% and LGD 5–30% by LTV; personal loan 3% / 65%; card 1% / 80%','assume','Illustrative','Made up for this demo; banks estimate PD/LGD from their own data',U.EBA,'You can edit every PD and LGD.'],
+ lifetime:['Lifetime PD for stage 2','4 × the 12-month PD (capped at 100%)','assume','Illustrative','Simplification for this demo; IFRS 9 requires a lifetime estimate',U.IFRS9,''],
+ coe:['Cost of equity','11%','assume','Illustrative','Shareholders’ required return; bank-specific',U.EBA,''],
+ funding:['Funding cost','2.30% mortgage / 2.00% personal loan','assume','Illustrative','Market swap/deposit rates; changes daily',U.EBA,''],
+ liq:['Liquidity premium','0.25%','assume','Illustrative','Bank’s internal funds-transfer pricing',U.EBA,''],
+ opex:['Operating cost','0.35% mortgage / 1.20% personal loan','assume','Illustrative','Bank’s own cost accounting',U.EBA,''],
+ margin:['Margin and competition','0.15% mortgage / 0.60% personal loan','assume','Illustrative','Commercial decision',U.EBA,''],
+ user:['Profile numbers','Whatever you enter','user','Your input','Entered in the profile panel',null,'Presets (Mila, Jonas, Aiko) are fictional.']
+};
+const TYPE_LABEL={law:'Law / standard',auth:'Set by authority',assume:'Illustrative',user:'Your input'};
+function chip(id){const s=SRC[id];if(!s)return'';return `<a class="src ${s[2]}" href="#sources" data-def="${TYPE_LABEL[s[2]]} · ${s[0]}: ${s[1]}. ${s[4]}.">${s[3]}</a>`;}
+function hydrate(root=document){root.querySelectorAll('[data-src]').forEach(e=>{e.outerHTML=chip(e.dataset.src);});}
+function srcTable(){
+  const groups=['law','auth','assume','user'];
+  $('srcTable').innerHTML=groups.map(g=>{
+    const rows=Object.entries(SRC).filter(([k,s])=>s[2]===g);
+    return `<h2>${TYPE_LABEL[g]}</h2><div class="card"><div class="tblwrap"><table><tr><th>Number</th><th>Value</th><th>Source</th></tr>`+
+    rows.map(([k,s])=>`<tr id="src-${k}"><td>${s[0]}${s[6]?`<div class="note">${s[6]}</div>`:''}</td><td>${s[1]}</td><td>${s[5]?`<a href="${s[5]}" target="_blank" rel="noopener">${s[4]}</a>`:s[4]}</td></tr>`).join('')+
+    `</table></div></div>`;}).join('');
+}
+
+/* ================= PROFILE ================= */
+const PRESETS={
+ mila:{income:2800,cur:2500,odLimit:1000,odDrawn:0,sav:12000,td:8000,tdMonths:9,cardLimit:3000,cardBal:400,cardRevolver:false,pl:10000,plRate:7,plYears:5,mort:175000,home:250000,mRate:3.5,mYears:25,salary:true,rel:true},
+ jonas:{income:2400,cur:1200,odLimit:500,odDrawn:0,sav:3000,td:0,tdMonths:0,cardLimit:1500,cardBal:300,cardRevolver:true,pl:0,plRate:7,plYears:5,mort:225000,home:250000,mRate:3.8,mYears:30,salary:true,rel:false},
+ aiko:{income:3500,cur:6000,odLimit:0,odDrawn:0,sav:140000,td:20000,tdMonths:14,cardLimit:5000,cardBal:900,cardRevolver:false,pl:0,plRate:7,plYears:5,mort:0,home:0,mRate:3.5,mYears:25,salary:true,rel:true}
+};
+let P={...PRESETS.mila};
+const FIELDS=[
+ {g:'Income',f:[['income','Net monthly income (€)',50]]},
+ {g:'Deposits and overdraft',f:[['cur','Current account balance (€)',100],['odLimit','Overdraft limit (€)',100],['odDrawn','Overdraft used today (€)',100],['sav','Savings balance (€)',500],['td','Term deposit (€)',500],['tdMonths','Term deposit: months left',1]]},
+ {g:'Credit card',f:[['cardLimit','Card limit (€)',100],['cardBal','Card balance today (€)',50]],c:[['cardRevolver','I usually carry a balance (do not pay in full)']]},
+ {g:'Personal loan',f:[['pl','Balance left (€)',500],['plRate','Interest rate (%)',0.1],['plYears','Years left',1]]},
+ {g:'Mortgage',f:[['mort','Balance left (€)',5000],['home','Home value (€)',5000],['mRate','Interest rate (%)',0.1],['mYears','Years left',1]]},
+ {g:'Relationship with the bank',c:[['salary','My salary is paid into my current account'],['rel','I am an established customer (long relationship or several products)']]}
+];
+function buildProfile(){
+  $('profGrid').innerHTML=FIELDS.map(g=>`<fieldset><legend>${g.g}</legend><div class="fgrid">`+
+    (g.f||[]).map(([k,l,s])=>`<div><label for="p_${k}">${l}</label><input type="number" id="p_${k}" min="0" step="${s}"></div>`).join('')+
+    `</div>`+(g.c||[]).map(([k,l])=>`<label class="chk"><input type="checkbox" id="p_${k}"> ${l}</label>`).join('')+`</fieldset>`).join('');
+  FIELDS.forEach(g=>{(g.f||[]).forEach(([k])=>$('p_'+k).oninput=readProfile);(g.c||[]).forEach(([k])=>$('p_'+k).onchange=readProfile);});
+  document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{
+    P={...PRESETS[b.dataset.preset]};
+    document.querySelectorAll('[data-preset]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    writeProfile();onProfile();
+  });
+}
+function writeProfile(){FIELDS.forEach(g=>{(g.f||[]).forEach(([k])=>$('p_'+k).value=P[k]);(g.c||[]).forEach(([k])=>$('p_'+k).checked=P[k]);});}
+function readProfile(){
+  FIELDS.forEach(g=>{(g.f||[]).forEach(([k])=>P[k]=Math.max(0,num('p_'+k)));(g.c||[]).forEach(([k])=>P[k]=$('p_'+k).checked);});
+  document.querySelectorAll('[data-preset]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  onProfile();
+}
+
+/* ================= CALCULATIONS ================= */
+const rwaMort=(L,V)=>{const a=Math.min(L,0.55*V),b=Math.max(L-0.55*V,0);return{a,b,r:0.2*a+0.75*b};};
+function calc(){
+  const p=P,C={};
+  const dep=p.cur+p.sav+p.td;
+  C.dep=dep;C.cov=dep>0?Math.min(1,100000/dep):1;
+  const mode=S.depMode;
+  const stab=(key)=>{
+    if(mode==='stable')return 1;if(mode==='less')return 0;
+    const ok=key==='cur'?(p.salary||p.rel):p.rel;
+    return ok?C.cov:0;
+  };
+  const rows=[];
+  const mk=(name,bal,key,type)=>{
+    const s=stab(key);const why=s>=0.999?'Stable: insured and ties to bank':s<=0.001?(C.cov<1&&mode==='auto'?'Less stable: no tie to bank / uninsured':'Less stable'):`Part stable (${Math.round(s*100)}% insured)`;
+    let rate,asf,w=why;
+    const blendRate=s*5+(1-s)*10, blendAsf=s*95+(1-s)*90;
+    if(type==='td'&&p.tdMonths>1){rate=0;w='Locked beyond 30 days: not expected to leave';} else rate=blendRate;
+    asf=(type==='td'&&p.tdMonths>=12)?100:blendAsf;
+    rows.push({name,bal,rate,out:bal*rate/100,asf,asfAmt:bal*asf/100,why:w});
+  };
+  mk('Current account',p.cur,'cur');mk('Savings',p.sav,'sav');mk('Term deposit',p.td,'td','td');
+  C.depRows=rows;
+  C.cardUndrawn=Math.max(p.cardLimit-p.cardBal,0);C.odUndrawn=Math.max(p.odLimit-p.odDrawn,0);
+  C.outUndrawn=(C.cardUndrawn+C.odUndrawn)*0.05;
+  C.lcrOut=rows.reduce((a,r)=>a+r.out,0)+C.outUndrawn;
+  C.asf=rows.reduce((a,r)=>a+r.asfAmt,0);
+  // RWA
+  const m=rwaMort(p.mort,p.home);C.mort=m;C.mortAvg=p.mort>0?m.r/p.mort:0;
+  C.ltv=p.home>0?p.mort/p.home*100:0;
+  const cardRW=p.cardRevolver?0.75:0.45,odRW=p.odDrawn>0?0.75:0.45;
+  C.cardRW=cardRW;C.odRW=odRW;
+  C.cardEad=p.cardBal+0.1*C.cardUndrawn;C.odEad=p.odDrawn+0.1*C.odUndrawn;
+  C.rwaRows=[
+   {n:'Mortgage',x:p.mort,t:p.mort>0?`${eur(m.a)} at 20% + ${eur(m.b)} at 75%`:'—',r:m.r,s:'rw_res'},
+   {n:'Personal loan',x:p.pl,t:'Regulatory retail 75%',r:0.75*p.pl,s:'rw_retail'},
+   {n:'Card (drawn + 10% of unused)',x:C.cardEad,t:(p.cardRevolver?'Carries a balance: 75%':'Transactor: 45%'),r:C.cardEad*cardRW,s:p.cardRevolver?'rw_retail':'rw_trans'},
+   {n:'Overdraft (drawn + 10% of unused)',x:C.odEad,t:(p.odDrawn>0?'In use: 75%':'Not used in 12 months: transactor 45%'),r:C.odEad*odRW,s:p.odDrawn>0?'rw_retail':'rw_trans'}
+  ];
+  C.rwa=C.rwaRows.reduce((a,r)=>a+r.r,0);
+  C.drawn=p.mort+p.pl+p.cardBal+p.odDrawn;
+  C.exposureLev=C.drawn+0.1*(C.cardUndrawn+C.odUndrawn);
+  // RSF
+  const rsf=[];
+  const f=(n,b,fac,w)=>rsf.push({n,b,fac,amt:b*fac/100,w});
+  f('Mortgage',p.mort,p.mYears<1?50:(C.mortAvg<=0.35?65:85),p.mYears<1?'<1 year left':(C.mortAvg<=0.35?'Risk weight ≤35%, >1 year':'Risk weight >35%, >1 year'));
+  f('Personal loan',p.pl,p.plYears<1?50:85,p.plYears<1?'<1 year left':'Retail loan >1 year');
+  f('Card and overdraft drawn',p.cardBal+p.odDrawn,50,'Short-term retail');
+  C.rsfRows=rsf;C.rsf=rsf.reduce((a,r)=>a+r.amt,0);
+  // payments
+  C.payM=pmt(p.mort,p.mRate,p.mYears);C.payP=pmt(p.pl,p.plRate,p.plYears);
+  // rule-of-thumb PD/LGD
+  C.autoM={pd:autoPD(C.ltv),lgd:autoLGD(C.ltv)};
+  return C;
+}
+
+/* ================= STATE ================= */
+const S={depMode:'auto',prod:'mort'};
+const touched=new Set();
+const setAuto=(id,v)=>{if(!touched.has(id))$(id).value=(Math.round(v*100)/100);};
+const markTouch=ids=>ids.forEach(id=>$(id).addEventListener('input',()=>touched.add(id)));
+let C=calc();
+const A={mort:{fnd:2.3,liq:.25,opx:.35,mrg:.15},loan:{fnd:2.0,liq:.25,opx:1.2,mrg:.6}};
+
+/* ================= VIEW 1 ================= */
+function renderDep(){
+  let t='<tr><th>Item</th><th class="n">Balance</th><th>How the bank classifies it</th><th class="n">Assumed to leave</th><th class="n">Amount</th></tr>';
+  C.depRows.forEach(r=>t+=`<tr><td>${r.name}</td><td class="n">${eur(r.bal)}</td><td>${r.why}</td><td class="n">${r.rate.toFixed(1)}%</td><td class="n">${eur(r.out)}</td></tr>`);
+  t+=`<tr><td>Unused card limit + unused overdraft</td><td class="n">${eur(C.cardUndrawn+C.odUndrawn)}</td><td>Credit lines you might draw in a crisis</td><td class="n">5%</td><td class="n">${eur(C.outUndrawn)}</td></tr>`;
+  t+=`<tr class="total"><td>Total assumed to leave in 30 days</td><td></td><td></td><td></td><td class="n">${eur(C.lcrOut)}</td></tr>`;
+  $('depTable').innerHTML=t;
+  let n=`Your deposits total ${eur(C.dep)}. `;
+  n+=C.dep>100000?`<b>${eur(C.dep-100000)} is above the €100,000 guarantee</b>, so that part is not treated as stable. `:'All of it is within the €100,000 guarantee. ';
+  n+=S.depMode==='auto'?'Try un-ticking “established customer” and “salary paid in” in your profile to see money turn “less stable”.':'You forced a classification above; switch back to see the real rules.';
+  $('depNote').innerHTML=n;
+}
+function renderNSFR(){
+  let t='<tr><th>Supply: deposits</th><th class="n">Balance</th><th class="n">Factor</th><th class="n">Counts as</th></tr>';
+  C.depRows.forEach(r=>t+=`<tr><td>${r.name}</td><td class="n">${eur(r.bal)}</td><td class="n">${r.asf.toFixed(0)}%</td><td class="n">${eur(r.asfAmt)}</td></tr>`);
+  t+=`<tr class="total"><td>Available stable funding (ASF)</td><td></td><td></td><td class="n">${eur(C.asf)}</td></tr>`;
+  t+='<tr><th>Demand: loans</th><th class="n">Balance</th><th class="n">Factor</th><th class="n">Needs</th></tr>';
+  C.rsfRows.forEach(r=>t+=`<tr><td>${r.n} <span class="note">(${r.w})</span></td><td class="n">${eur(r.b)}</td><td class="n">${r.fac}%</td><td class="n">${eur(r.amt)}</td></tr>`);
+  t+=`<tr class="total"><td>Required stable funding (RSF)</td><td></td><td></td><td class="n">${eur(C.rsf)}</td></tr>`;
+  $('nsfrTable').innerHTML=t;
+  const cov=C.rsf>0?C.asf/C.rsf*100:null;
+  $('nsfrNote').innerHTML=(cov===null?'You have no loans, so you add to the bank\'s stable funding without using any.':
+    `Your deposits cover about <b>${cov.toFixed(0)}%</b> of the stable funding your loans need. `+(cov>=100?'You supply more than you use, which helps the bank\'s ratio.':'The bank fills the gap with its capital, long-term bonds and other customers\' deposits. A household with big savings and a small loan helps the ratio; a big mortgage uses it up. Banks need both.'))+' '+chip('nsfr');
+}
+function renderLTV1(){
+  const V=P.home>0?P.home:250000,l=num('ltv1');
+  $('ltv1Home').textContent=eur(V)+(P.home>0?'':' (example, your profile has none)');
+  $('ltv1Actual').textContent=P.home>0?pc(C.ltv,0):'none';
+  $('ltv1v').textContent=l+'%';
+  const L=l/100*V,x=rwaMort(L,V);
+  $('rwStack').innerHTML=L>0?`<div style="width:${x.a/L*100}%;background:var(--c2)"></div><div style="width:${x.b/L*100}%;background:var(--c3)"></div>`:'';
+  $('rwLoan').textContent=eur(L);$('rwRwa').textContent=eur(x.r);$('rwAvg').textContent=pc(L>0?x.r/L*100:0);
+  $('rwCap').textContent=eur(x.r*cet1Held()/100);
+}
+function renderBook(){
+  let t='<tr><th>Product</th><th class="n">Counted exposure</th><th>Treatment</th><th class="n">RWA</th><th>Source</th></tr>';
+  C.rwaRows.forEach(r=>t+=`<tr><td>${r.n}</td><td class="n">${eur(r.x)}</td><td>${r.t}</td><td class="n">${eur(r.r)}</td><td>${chip(r.s)}</td></tr>`);
+  t+=`<tr class="total"><td>Total</td><td class="n">${eur(C.rwaRows.reduce((a,r)=>a+r.x,0))}</td><td>Average weight on drawn loans: ${C.drawn>0?pc(C.rwa/C.drawn*100):'n/a'}</td><td class="n">${eur(C.rwa)}</td><td></td></tr>`;
+  $('bookTable').innerHTML=t;
+}
+
+/* ----- capital table ----- */
+const CAPROWS=[
+ ['cet1','Pillar 1 minimum: CET1',4.5,'4.5% fixed by law','cap_min',true],
+ ['t1','Pillar 1 minimum: Tier 1 (CET1 + AT1)',6,'6% fixed by law','cap_min',true],
+ ['tot','Pillar 1 minimum: Total capital',8,'8% fixed by law','cap_min',true],
+ ['p2r','SREP: Pillar 2 requirement (P2R)',2,'Bank-specific, about 1–3%. Must be at least 56% CET1 and 75% Tier 1','p2r',false],
+ ['ccb','Capital conservation buffer',2.5,'2.5% fixed by law','ccb',true],
+ ['ccyb','Countercyclical buffer (CCyB)',1,'0–2.5% typical. Set by each country’s authority','ccyb',false],
+ ['syrb','Systemic risk buffer (SyRB)',0.5,'0–3% typical. National choice, often 0%','syrb',false],
+ ['osii','O-SII / G-SII buffer',1,'O-SII 0–3%, G-SII 1–3.5%. Large banks only','osii',false],
+ ['p2g','Pillar 2 guidance (P2G)',1,'Bank-specific. Not binding. Held in CET1','p2g',false]
+];
+const capVal=k=>num('cap_'+k);
+// CET1 the bank must hold: Pillar 1 CET1 + CET1 part of P2R (56%) + all buffers + P2G
+const cet1Held=()=>capVal('cet1')+0.56*capVal('p2r')+capVal('ccb')+capVal('ccyb')+capVal('syrb')+capVal('osii')+capVal('p2g');
+function buildCap(){
+  let t='<tr><th>Layer</th><th class="n">Ratio of RWA</th><th>Standard value</th><th class="n">€ on your RWA</th><th>Source</th></tr>';
+  CAPROWS.forEach(r=>t+=`<tr><td>${r[1]}</td><td class="n"><input type="number" id="cap_${r[0]}" step="0.25" min="0" value="${r[2]}" aria-label="${r[1]}"> %</td><td>${r[3]} <span class="flag" id="capFlag_${r[0]}"></span></td><td class="n" id="capEur_${r[0]}"></td><td>${chip(r[4])}</td></tr>`);
+  t+=`<tr class="total"><td>Overall capital requirement incl. guidance<div class="note">Sum of the layers above (total-capital basis)</div></td><td class="n" id="capOverall"></td><td>= 8% + P2R + conservation + CCyB + SyRB + O-SII/G-SII + P2G. The binding OCR is the same without P2G.</td><td class="n" id="capOverallEur"></td><td>${chip('tscr')}</td></tr>`;
+  $('capTable').innerHTML=t;
+  const upd=()=>{renderCap();renderLTV1();renderRate();};
+  CAPROWS.forEach(r=>$('cap_'+r[0]).oninput=upd);
+  $('capReset').onclick=()=>{CAPROWS.forEach(r=>$('cap_'+r[0]).value=r[2]);upd();};
+}
+function renderCap(){
+  const R=C.rwa;
+  CAPROWS.forEach(r=>{
+    const v=capVal(r[0]);$('capEur_'+r[0]).textContent=eur(R*v/100);
+    $('capFlag_'+r[0]).textContent=(r[5]&&Math.abs(v-r[2])>1e-9)?'⚠ differs from law':'';
+  });
+  const cet1=capVal('cet1'),t1=capVal('t1'),tot=capVal('tot'),p2r=capVal('p2r'),ccb=capVal('ccb'),ccyb=capVal('ccyb'),syrb=capVal('syrb'),osii=capVal('osii'),p2g=capVal('p2g');
+  const overall=tot+p2r+ccb+ccyb+syrb+osii+p2g;
+  $('capOverall').textContent=overall.toFixed(2)+'%';$('capOverallEur').textContent=eur(R*overall/100);
+  const cbr=ccb+ccyb+syrb+osii;
+  const tsC=cet1+0.56*p2r,tsT=t1+0.75*p2r,tsA=tot+p2r;
+  const oC=tsC+cbr,oT=tsT+cbr,oA=tsA+cbr,gC=oC+p2g;
+  const cell=v=>`<td class="n">${v.toFixed(2)}% · ${eur(R*v/100)}</td>`;
+  const row=(n,a,b,c,cls)=>`<tr${cls?` class="${cls}"`:''}><td>${n}</td>${cell(a)}${cell(b)}${cell(c)}</tr>`;
+  $('capSum').innerHTML='<tr><th>Requirement</th><th class="n">CET1</th><th class="n">Tier 1</th><th class="n">Total capital</th></tr>'+
+    row('<b>Law-only baseline</b> (Pillar 1 + conservation buffer, what every bank has)',4.5+2.5,6+2.5,8+2.5)+
+    row('Pillar 1 minimum (your values)',cet1,t1,tot)+
+    row('+ P2R from SREP = <b>TSCR</b>',tsC,tsT,tsA)+
+    row('+ combined buffers (conservation + CCyB + SyRB + O-SII/G-SII) = <b>CBR</b>',cbr,cbr,cbr)+
+    row('<b>OCR</b> = TSCR + CBR (below this: dividend limits)',oC,oT,oA,'total')+
+    `<tr><td>OCR + P2G (CET1 only; guidance, not binding). This is the CET1 the bank actually holds and prices with</td>${cell(gC)}<td class="n">n/a</td><td class="n">n/a</td></tr>`;
+  // sum build-up
+  const parts=[['Pillar 1 total capital minimum',tot],['+ SREP: Pillar 2 requirement (P2R)',p2r],['+ Capital conservation buffer',ccb],['+ Countercyclical buffer (CCyB)',ccyb],['+ Systemic risk buffer (SyRB)',syrb],['+ O-SII / G-SII buffer',osii]];
+  let run=0,bt='<tr><th>Component</th><th class="n">% of RWA</th><th class="n">€ on your RWA</th><th class="n">Running total</th></tr>';
+  parts.forEach(([n,v])=>{run+=v;bt+=`<tr><td>${n}</td><td class="n">${v.toFixed(2)}%</td><td class="n">${eur(R*v/100)}</td><td class="n">${run.toFixed(2)}% · ${eur(R*run/100)}</td></tr>`;});
+  bt+=`<tr class="total"><td>= Binding requirement (OCR, total capital)</td><td class="n">${run.toFixed(2)}%</td><td class="n">${eur(R*run/100)}</td><td></td></tr>`;
+  const withG=run+p2g;
+  bt+=`<tr><td>+ Pillar 2 guidance (P2G, not binding)</td><td class="n">${p2g.toFixed(2)}%</td><td class="n">${eur(R*p2g/100)}</td><td class="n">${withG.toFixed(2)}% · ${eur(R*withG/100)}</td></tr>`;
+  bt+=`<tr class="total"><td>= Total incl. guidance</td><td class="n">${withG.toFixed(2)}%</td><td class="n">${eur(R*withG/100)}</td><td></td></tr>`;
+  $('capBuild').innerHTML=bt;
+  $('capBuildNote').innerHTML=`The conservation buffer (2.5%) is part of the combined buffer, so it is included. Without it the total would be ${(withG-ccb).toFixed(2)}% (${eur(R*(withG-ccb)/100)}). P2G is really guidance on top of <i>CET1</i>; adding it to a total-capital figure is a simplification to give one headline number. The CET1-only version (with P2R's 56% CET1 share) is the “OCR + P2G” line in the table above.`;
+  // stack
+  const segs=[['Pillar 1 CET1',cet1,'--c1'],['P2R (CET1 part, 56%)',0.56*p2r,'--c4'],['Conservation',ccb,'--c2'],['CCyB',ccyb,'--c3'],['SyRB',syrb,'--c6'],['O-SII / G-SII',osii,'--c7'],['P2G',p2g,'--c8']];
+  const used=segs.reduce((a,s)=>a+s[1],0);
+  const tot2=Math.max(used,0.0001);
+  $('capStack').innerHTML=segs.map(s=>`<div title="${s[0]} ${s[1].toFixed(2)}%" style="width:${s[1]/tot2*100}%;background:var(${s[2]})"></div>`).join('');
+  $('capLegend').innerHTML=segs.map(s=>`<span><i style="background:var(${s[2]})"></i>${s[0]} ${s[1].toFixed(2)}%</span>`).join('');
+  $('capNote').innerHTML=`Against your risk-weighted assets of ${eur(R)}, the bank must hold at least <b>${eur(R*oC/100)}</b> of CET1 (OCR, ${oC.toFixed(2)}%) and, counting guidance, aims for <b>${eur(R*used/100)}</b> (${used.toFixed(2)}%). Real banks often hold more.`;
+  const lev=C.exposureLev*0.03;
+  $('levNote').innerHTML=`<b>Leverage ratio</b> ${chip('lev')}: separately, Tier 1 must be at least 3% of total exposure, ignoring risk weights. On your exposure of ${eur(C.exposureLev)} that is ${eur(lev)} of Tier 1, versus ${eur(R*(oT)/100)} from the risk-based Tier 1 OCR. The larger number binds in practice.`;
+}
+
+/* ================= VIEW 2 ================= */
+function renderPlay(){
+  const pd=num('pgPDn'),lgd=num('pgLGDn'),ead=num('pgEADn');
+  const el=pd/100*lgd/100*ead;
+  $('pgEL').textContent=eur(el);$('pgELp').textContent=pc(ead>0?el/ead*100:0,2);
+  $('pgNote').textContent=pd>=100?'PD of 100% means the default is treated as certain. That is IFRS 9 stage 3, and the loss is simply LGD × EAD.':pd>=20?'A PD this high is a troubled loan, not a normal one. Banks rarely lend at this level; they would be pricing for a loss.':pd<=1?'Typical of a mortgage to a stable borrower.':'Typical range for an unsecured consumer loan is 1–5%.';
+}
+function bindPair(rid,nid,fn,min,max){
+  $(rid).oninput=()=>{$(nid).value=$(rid).value;fn();};
+  $(nid).oninput=()=>{let v=clamp(num(nid),min,max);$(rid).value=Math.min(v,parseFloat($(rid).max));fn();};
+}
+function buildEL(){
+  $('elTable').innerHTML='<tr><th>Product</th><th class="n">EAD (from profile)</th><th class="n">PD (%)</th><th class="n">LGD (%)</th><th class="n">Expected loss</th></tr>'+
+  `<tr><td>Mortgage</td><td class="n" id="elM_ead"></td><td class="n"><input type="number" id="elM_pd" min="0" max="100" step="0.05"></td><td class="n"><input type="number" id="elM_lgd" min="0" max="100" step="1"></td><td class="n" id="elM_el"></td></tr>`+
+  `<tr><td>Personal loan</td><td class="n" id="elP_ead"></td><td class="n"><input type="number" id="elP_pd" min="0" max="100" step="0.1" value="3"></td><td class="n"><input type="number" id="elP_lgd" min="0" max="100" step="1" value="65"></td><td class="n" id="elP_el"></td></tr>`+
+  `<tr><td>Card + unused limit <div class="note">EAD = balance + <input type="number" id="elC_ccf" min="0" max="100" step="5" value="50" style="width:60px;display:inline"> % of unused limit (the bank's own estimate)</div></td><td class="n" id="elC_ead"></td><td class="n"><input type="number" id="elC_pd" min="0" max="100" step="0.1" value="1"></td><td class="n"><input type="number" id="elC_lgd" min="0" max="100" step="1" value="80"></td><td class="n" id="elC_el"></td></tr>`+
+  `<tr class="total"><td>Expected annual loss (IFRS 9 stage 1 allowance)</td><td></td><td></td><td></td><td class="n" id="elTot"></td></tr>`;
+  ['elM_pd','elM_lgd','elP_pd','elP_lgd','elC_pd','elC_lgd'].forEach(id=>$(id).addEventListener('input',()=>{touched.add(id);}));
+  ['elM_pd','elM_lgd','elP_pd','elP_lgd','elC_pd','elC_lgd','elC_ccf'].forEach(id=>$(id).addEventListener('input',()=>{renderEL();renderSlip();}));
+  $('elReset').onclick=()=>{['elM_pd','elM_lgd','elP_pd','elP_lgd','elC_pd','elC_lgd'].forEach(id=>touched.delete(id));$('elP_pd').value=3;$('elP_lgd').value=65;$('elC_pd').value=1;$('elC_lgd').value=80;autoDefaults();renderEL();renderSlip();};
+}
+function elEad(){return{m:P.mort,p:P.pl,c:P.cardBal+num('elC_ccf')/100*C.cardUndrawn};}
+function renderEL(){
+  const e=elEad();
+  const rows=[['M',e.m],['P',e.p],['C',e.c]];let tot=0;
+  rows.forEach(([k,ead])=>{
+    const pd=clamp(num(`el${k}_pd`),0,100),lgd=clamp(num(`el${k}_lgd`),0,100),el=pd/100*lgd/100*ead;tot+=el;
+    $(`el${k}_ead`).textContent=eur(ead);$(`el${k}_el`).textContent=eur(el);
+  });
+  $('elTot').textContent=eur(tot);
+}
+function autoDefaults(){
+  setAuto('elM_pd',C.autoM.pd);setAuto('elM_lgd',C.autoM.lgd);
+  $('colLtv').textContent=P.home>0&&P.mort>0?pc(C.ltv,0):'n/a';
+  $('colLgd').textContent=P.home>0&&P.mort>0?'~'+C.autoM.lgd.toFixed(0)+'%':'n/a';
+}
+function renderSlip(){
+  const bal=P.pl;
+  $('slipIntro').textContent=bal>0?`Slide the days late and watch your personal loan (${eur(bal)} left) move through the stages.`:'You have no personal loan in your profile. Enter a balance in the profile panel to try this.';
+  $('slipBody').hidden=!(bal>0);
+  if(!(bal>0))return;
+  const d=num('late'),pd=clamp(num('elP_pd'),0,100),lgd=clamp(num('elP_lgd'),0,100),life=clamp(num('lifePD'),0,100);
+  $('latev').textContent=d+(d===1?' day':' days');
+  let cls,name,prov,basis,txt,rwTxt;
+  const base=0.75*bal;
+  if(d<30){cls='ok';name='Stage 1 · performing';prov=pd/100*lgd/100*bal;basis=`12-month PD ${pc(pd)} × LGD ${pc(lgd,0)} × ${eur(bal)}`;txt='Normal. The bank sets aside a small amount for losses that might happen in the next year.';rwTxt=eur(base)+' (75%)';}
+  else if(d<90){cls='warn';name='Stage 2 · credit risk up';prov=life/100*lgd/100*bal;basis=`Lifetime PD ${pc(life)} × LGD ${pc(lgd,0)} × ${eur(bal)}`;txt='Credit risk has risen significantly. The bank now provisions for losses over the whole remaining life of the loan. The regulatory weight is still 75%.';rwTxt=eur(base)+' (75%)';}
+  else{cls='bad';name='Stage 3 · in default';prov=lgd/100*bal;basis=`PD 100% × LGD ${pc(lgd,0)} × ${eur(bal)}`;
+    const share=prov/bal,rw=share>=0.2?1.0:1.5;
+    txt=`The loan is in default. The bank sets aside ${pc(share*100,0)} of it, so the regulatory weight becomes ${rw*100}% (${share>=0.2?'at least 20% provisioned: 100%':'under 20% provisioned: 150%'}) ${chip('rw_def')} applied to the loan after provisions. A missed payment costs the bank twice: higher provisions and different capital treatment. That is why banks reach out early.`;
+    rwTxt=eur((bal-prov)*rw)+` (${rw*100}% × ${eur(bal-prov)})`;}
+  const b=$('stageBadge');b.className='badge '+cls;b.textContent=(cls==='ok'?'✓ ':cls==='warn'?'● ':'▲ ')+name;
+  $('prov').textContent=eur(prov);$('provBasis').textContent=basis;$('provRwa').textContent=rwTxt;$('stageText').innerHTML=txt;
+}
+
+/* ================= VIEW 3 ================= */
+function renderAff(){
+  const inc=num('aInc'),debt=num('aDebt'),live=num('aLive'),loan=num('aLoan'),rate=num('aRate'),yrs=Math.max(1,num('aYrs')),st=num('aStress'),l1=num('aLim1'),l2=num('aLim2');
+  $('aStressV').textContent='+'+st.toFixed(1)+' pp';
+  $('aDebtNote').innerHTML=`Other debts auto-filled from your profile: personal loan ${eur(C.payP)} + card ${eur(0.02*P.cardLimit)} (bank assumes 2% of the limit) ${chip('cardpay')}. A mortgage you already hold is treated here as the loan applied for.`;
+  const p1=pmt(loan,rate,yrs),p2=pmt(loan,rate+st,yrs);
+  const d1=inc>0?(p1+debt)/inc*100:999,d2=inc>0?(p2+debt)/inc*100:999;
+  const r1=inc-p1-debt-live,r2=inc-p2-debt-live;
+  $('aPay').textContent=eur(p1);$('aD1').textContent=inc>0?pc(d1):'n/a';$('aR1').textContent=eur(r1);$('aD2').textContent=inc>0?pc(d2):'n/a';$('aR2').textContent=eur(r2);
+  const b=$('aBadge');let cls,t,x;
+  if(loan<=0){cls='warn';t='● Enter a loan amount';x='Put an amount in “Loan applied for” to test affordability.';}
+  else if(d1<=l1&&r1>0&&d2<=l2&&r2>0){cls='ok';t='✓ Looks affordable';x='Passes at today\'s rate and under the stress test (with your limits).';}
+  else if(d1<=l1&&r1>0){cls='warn';t='● Borderline';x='Fine today, but tight if rates rise. A bank may reduce the amount, lengthen the term or ask for a co-borrower.';}
+  else{cls='bad';t='▲ Likely too stretched';x='Over the limit or no money left after living costs. A bank would likely offer less or decline.';}
+  b.className='badge '+cls;b.textContent=t;$('aText').textContent=x;
+}
+function loadAssump(){const a=A[S.prod];['fnd','liq','opx','mrg'].forEach(k=>$(k).value=a[k]);}
+function renderRate(){
+  const cet1=cet1Held();$('rateCet1').textContent=cet1.toFixed(2)+'%';
+  const coe=num('coe');
+  let el,rw,pd,lgd,note;
+  if(S.prod==='mort'){
+    const ltv=num('ltv3');$('ltv3v').textContent=ltv+'%';$('ltv3Actual').textContent=P.home>0?pc(C.ltv,0):'none';
+    const x=rwaMort(ltv,100);rw=ltv>0?x.r/ltv:0;
+    pd=clamp(num('rM_pd'),0,100);lgd=clamp(num('rM_lgd'),0,100);
+    note=`Mortgage at LTV ${ltv}%: risk weight ${pc(rw*100)} (20% on the first 55% of value, 75% above). PD and LGD are editable rule-of-thumb values. Higher LTV raises both capital and expected loss.`;
+  }else{
+    rw=0.75;pd=clamp(num('rL_pd'),0,100);lgd=clamp(num('rL_lgd'),0,100);
+    note='Personal loan: risk weight 75% whatever your PD. Move the PD: expected loss changes, capital cost does not. At very high PDs the rate becomes unrealistic; real banks would decline instead.';
+  }
+  el=pd*lgd/100;
+  const a=A[S.prod];const fnd=num('fnd'),liq=num('liq'),opx=num('opx'),mrg=num('mrg');
+  a.fnd=fnd;a.liq=liq;a.opx=opx;a.mrg=mrg;
+  const capPer=rw*cet1;
+  const cap=rw*(cet1/100)*(coe-(fnd+liq));
+  const comps=[['Funding cost','--c1',fnd],['Liquidity premium','--c2',liq],['Expected loss','--c6',el],['Capital cost','--c4',cap],['Operating cost','--c5',opx],['Margin and competition','--c3',mrg]];
+  const v=comps.map(c=>Math.max(c[2],0)),tot=comps.reduce((s,c)=>s+c[2],0);
+  $('rateTot').textContent=tot.toFixed(2)+'%';$('rateRw').textContent=pc(rw*100);$('rateCap').textContent='€'+capPer.toFixed(1);
+  const vs=v.reduce((s,x)=>s+x,0)||1;
+  $('rateStack').innerHTML=comps.map((c,i)=>`<div title="${c[0]} ${c[2].toFixed(2)}%" style="width:${v[i]/vs*100}%;background:var(${c[1]})"></div>`).join('');
+  $('rateLegend').innerHTML=comps.map(c=>`<span><i style="background:var(${c[1]})"></i>${c[0]}</span>`).join('');
+  $('rateTable').innerHTML=comps.map(c=>`<tr><td>${c[0]}</td><td class="n">${c[2].toFixed(2)}%</td></tr>`).join('')+`<tr class="total"><td>Indicative rate</td><td class="n">${tot.toFixed(2)}%</td></tr>`;
+  $('rateNote').textContent=note;
+  // Part 3 card
+  const loan=P.mort,capEur=loan*C.mortAvg*cet1/100;
+  $('capCostCard').innerHTML=`<p><b>1. Capital needed</b> = loan × risk weight × CET1 ratio the bank holds (requirement + guidance)</p>
+   <p><b>2. Extra cost of using equity instead of other funding</b> = cost of equity − funding and liquidity costs = ${coe.toFixed(2)}% − ${(fnd+liq).toFixed(2)}% = <b>${(coe-fnd-liq).toFixed(2)}%</b></p>
+   <p><b>3. Capital cost in the rate</b> = capital as % of loan × that extra cost</p>
+   <p>${loan>0?`<b>Your mortgage:</b> ${eur(loan)} × ${pc(C.mortAvg*100)} × ${cet1.toFixed(2)}% ≈ <b>${eur(capEur)}</b> of capital (${pc(C.mortAvg*cet1)} of the loan) → ${pc(C.mortAvg*cet1)} × ${(coe-fnd-liq).toFixed(2)}% ≈ <b>${(C.mortAvg*cet1/100*(coe-fnd-liq)).toFixed(2)}%</b> in the rate (using the mortgage funding assumptions currently shown; switch to “Mortgage” above to see them).`:'You have no mortgage in your profile. The rate calculator above still works with the LTV slider.'}</p>`;
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  $('homeKpis').innerHTML=[['Deposits',eur(C.dep)],['Borrowings',eur(C.drawn)],['LTV',P.home>0&&P.mort>0?pc(C.ltv,0):'n/a'],['Risk-weighted assets',eur(C.rwa)],['Avg risk weight',C.drawn>0?pc(C.rwa/C.drawn*100):'n/a']].map(([a,b])=>`<div class="kpi"><span>${a}</span><strong>${b}</strong></div>`).join('');
+  $('hMortReg').textContent=P.mort>0?`RWA ${eur(C.mort.r)} (avg weight ${pc(C.mortAvg*100)})`:'No mortgage';
+  $('hMortRisk').textContent=P.mort>0?`PD ${C.autoM.pd.toFixed(2)}%, LGD ${C.autoM.lgd.toFixed(0)}%, expected loss ${eur(C.autoM.pd/100*C.autoM.lgd/100*P.mort)}`:'—';
+  $('hMortLend').textContent=P.mort>0?`Payment ${eur(C.payM)}/month at ${P.mRate}%`:'—';
+  $('hDepReg').textContent=C.dep>0?`${pc(C.lcrOut/Math.max(C.dep,1)*100)} of deposits+lines assumed to leave in a crisis`:'No deposits';
+  $('profSum').textContent=`· deposits ${eur(C.dep)} · borrowings ${eur(C.drawn)} · RWA ${eur(C.rwa)}`;
+}
+
+/* ================= GLOSSARY ================= */
+const G=[
+['Standardised Approach (SA)','The regulator’s fixed price list for measuring credit risk. Each type of loan gets a set risk weight; the bank does not use its own statistical models to choose it.','CRR (EU) 575/2013, Part Three, Title II, Chapter 2 (Arts 111–134), as amended by CRR3 (EU) 2024/1623.',U.CRR],
+['Risk weight','A percentage that says how much of a loan “counts” when working out the capital a bank needs. Safer loan types count for less.','CRR Arts 111–134 (each exposure class has its own weights).',U.CRR],
+['Risk-weighted assets (RWA)','All of a bank’s loans, each multiplied by its risk weight, added up. Capital ratios divide by this number.','CRR Art 92(3) (total risk exposure amount); Part Three, Title II.',U.CRR],
+['Exposure value','How much the bank counts as lent to you for capital purposes: what you owe, plus a share of unused limits.','CRR Art 111.',U.CRR],
+['Credit conversion factor (CCF)','The share of an unused limit that is counted as if you had already borrowed it. For limits the bank can cancel at any time: 10%.','CRR Art 111 (off-balance-sheet items) as amended by CRR3.',U.CRR],
+['Regulatory retail','Small loans to many individuals, kept diversified. They get a 75% weight.','CRR Art 123.',U.CRR],
+['Transactor','Someone who repays a card (or never uses an overdraft) in full each month for 12 months. Their lower risk means a 45% weight instead of 75%.','CRR Art 123 as amended by CRR3 (transactor exposures; see also Art 4(1) definitions).',U.CRR],
+['Loan-to-value (LTV)','What you owe divided by what the home is worth. €175,000 owed on a €250,000 home is 70%.','No single legal definition; the property value and the split at 55% are used in CRR Art 125; valuation rules in CRR Art 229.',U.CRR],
+['Common Equity Tier 1 (CET1)','The best-quality cushion: shareholders’ money and retained profits that can absorb losses immediately.','CRR Art 26 (items), Art 50 (CET1 capital), Art 92(1)(a) (4.5% minimum).',U.CRR],
+['Tier 1 and Total capital','Tier 1 = CET1 plus other loss-absorbing instruments (AT1). Total capital adds lower-quality “Tier 2”. Minimums: 6% and 8% of RWA.','CRR Art 25 (Tier 1), Art 71 and 72 (Tier 2 and own funds), Art 92(1)(b)(c).',U.CRR],
+['Capital ratio','The bank’s capital divided by its risk-weighted assets. The higher, the thicker the cushion.','CRR Art 92(2).',U.CRR],
+['Capital conservation buffer','An extra 2.5% cushion for every bank that is meant to be used in bad times. Dipping into it restricts dividends and bonuses.','CRD (2013/36/EU) Art 129.',U.CRD],
+['Countercyclical buffer (CCyB)','An extra cushion that a country’s authority turns up when lending is booming and turns down in a downturn. It differs by country.','CRD Arts 130 and 136.',U.CRD],
+['Systemic risk buffer (SyRB)','A national add-on against long-term structural risks in a country’s financial system.','CRD Art 133.',U.CRD],
+['O-SII / G-SII buffer','Extra capital for very large banks whose failure would hurt a country (O-SII) or the world (G-SII).','CRD Art 131.',U.CRD],
+['Combined buffer requirement (CBR)','All the buffers above added together.','CRD Art 128(6) (definition).',U.CRD],
+['SREP and Pillar 2 requirement (P2R)','Each year the supervisor reviews a bank’s risks (SREP) and may require extra capital for risks the minimum misses. That extra is P2R and is specific to each bank.','CRD Art 97 (SREP) and Art 104a (P2R); EBA SREP Guidelines (EBA/GL/2022/03).',U.CRD],
+['Pillar 2 guidance (P2G)','The supervisor’s non-binding advice to keep even more CET1, to cope with a stress scenario.','CRD Art 104b.',U.CRD],
+['TSCR, OCR and MDA','TSCR = Pillar 1 + P2R. OCR = TSCR + buffers. If a bank’s capital drops below the OCR, automatic limits apply to dividends and bonuses (the Maximum Distributable Amount).','Terms from the EBA SREP Guidelines; MDA: CRD Art 141. No single legal definition of TSCR/OCR in the CRR.',U.EBA],
+['Leverage ratio','A simple safety net: Tier 1 capital divided by total exposure, with no risk weighting. At least 3%.','CRR Art 92(1)(d) and Art 429.',U.CRR],
+['Output floor','A CRR3 rule stopping banks that use internal models from reporting much lower risk than the standard weights would give (72.5% by 2030). Banks already on the SA are not much affected.','CRR Art 92 (as amended by CRR3).',U.CRR],
+['Liquidity Coverage Ratio (LCR)','A 30-day emergency-fund test: the bank’s cash-like assets must at least cover the money assumed to leave in a stress.','CRR Art 412; Delegated Regulation (EU) 2015/61.',U.LCR],
+['Run-off rate','The share of a deposit that regulators assume leaves in the 30-day stress. 5% for stable money, 10% or more for less stable.','Delegated Regulation (EU) 2015/61 (retail deposit outflows).',U.LCR],
+['Net Stable Funding Ratio (NSFR)','A one-year test that long-term lending is funded by long-term money, not by money that could disappear next month.','CRR Part Six, Title IV (Arts 428a onwards).',U.CRR],
+['Deposit guarantee scheme','State-backed protection of up to €100,000 per person per bank if a bank fails.','Directive 2014/49/EU, Art 6.',U.DGS],
+['Probability of default (PD)','The chance, from 0% to 100%, that a borrower stops paying within a period, usually 12 months.','CRR Art 4(1) (definition of probability of default); default itself: Art 178.',U.CRR],
+['Loss given default (LGD)','If a borrower defaults, the share of the money owed that the bank ends up losing after selling collateral and recovering what it can.','CRR Art 4(1) (definition of loss given default).',U.CRR],
+['Exposure at default (EAD)','How much the borrower would owe at the moment of default, including part of any unused limit.','CRR Art 111 (standardised exposure value); Art 166 (internal models).',U.CRR],
+['Expected loss','PD × LGD × EAD: the average loss a bank expects from a loan. It is a normal cost of lending.','IFRS 9 ¶5.5.17 and Appendix A (expected credit losses); CRR Art 4(1).',U.IFRS9],
+['Default','Normally 90 days overdue (above small amount thresholds), or the bank judges you unlikely to pay.','CRR Art 178; EBA Guidelines on the definition of default (EBA/GL/2016/07).',U.CRR],
+['IFRS 9 stages','Accounting stages for loan losses. 1: normal, small provision. 2: credit risk has risen a lot (30+ days late is the backstop), bigger provision. 3: credit-impaired (about 90+ days late).','IFRS 9 ¶5.5.3, 5.5.5, 5.5.11, B5.5.37 and Appendix A.',U.IFRS9],
+['Specific credit risk adjustment','Money already set aside for a particular troubled loan. It reduces the exposure and decides whether a defaulted loan weighs 100% or 150%.','CRR Art 110 and Art 127.',U.CRR],
+['Collateral and credit risk mitigation','Something that backs the loan (like the home) and reduces the bank’s loss if you default.','CRR Arts 192–241.',U.CRR],
+['Know Your Customer (KYC) / customer due diligence','The checks a bank must do to confirm who you are, where your money comes from and why you bank there.','Directive (EU) 2015/849 Arts 13–14; Regulation (EU) 2024/1624 (applies from 10 July 2027).',U.AMLD],
+['Politically exposed person (PEP)','Someone in a prominent public role, and close family or associates. Banks must apply extra checks.','Directive (EU) 2015/849 Art 3(9).',U.AMLD],
+['Forbearance','Help given to a borrower in difficulty, such as a payment holiday or longer term.','MCD Art 28; CCD2 forbearance provisions; EBA Guidelines on arrears and foreclosure (EBA/GL/2015/12).',U.MCD],
+['Creditworthiness assessment','The bank’s legal duty to check you can really repay, using your income, expenses and debts.','MCD Art 18; CCD2 creditworthiness provisions; EBA Guidelines on loan origination and monitoring (EBA/GL/2020/06).',U.MCD],
+['Debt-service-to-income (DSTI)','Your monthly debt payments divided by your monthly income.','No EU-wide legal definition or limit. Limits are set by national authorities or by the bank.',U.EBA],
+['APR / APRC','Interest plus fees expressed as one yearly percentage. Compare this, not just the headline rate. APRC is the version for mortgages.','MCD Art 4 (definition of APRC); CCD2 definitions and APR annex.',U.MCD],
+['ESIS and SECCI','The standard European information sheets that let you compare mortgage (ESIS) and consumer loan (SECCI) offers.','MCD Art 14 and Annex II; CCD2 pre-contractual information provisions.',U.MCD],
+['Operational risk','Losses from failed systems, people, processes or outside events such as fraud and cyberattacks.','CRR Part Three, Title III (own funds for operational risk) as amended by CRR3.',U.CRR],
+['Concentration risk','Too much lent to one borrower, sector or region.','CRR Art 395 (large exposures limit); CRD Art 98 (SREP).',U.CRR],
+['Funding cost, liquidity premium, margin','Business terms for what it costs the bank to obtain money, to hold safety stock of liquid assets, and to earn a profit. Not defined in law.','No legal definition. Liquidity requirements are in CRR Arts 412 and 428a onwards.',U.CRR]
+];
+function gDraw(){
+  const q=$('gSearch').value.toLowerCase();
+  $('gList').innerHTML=G.filter(g=>(g[0]+g[1]+g[2]).toLowerCase().includes(q)).map(g=>`<div class="card gl"><h3>${g[0]}</h3><p>${g[1]}</p><div class="ref"><b>Legal reference:</b> <a href="${g[3]}" target="_blank" rel="noopener">${g[2]}</a></div></div>`).join('')||'<p class="note">No match.</p>';
+}
+
+/* ================= WIRING ================= */
+function onProfile(){
+  C=calc();
+  ['aInc','aDebt','aLoan','aRate','aYrs','rM_pd','rM_lgd','elM_pd','elM_lgd'].forEach(id=>touched.delete(id));
+  // local sync
+  const ltvInit=P.home>0?clamp(Math.round(C.ltv),20,110):70;
+  $('ltv1').value=ltvInit;$('ltv3').value=ltvInit;
+  setAuto('aInc',P.income);setAuto('aDebt',C.payP+0.02*P.cardLimit);setAuto('aLoan',P.mort);setAuto('aRate',P.mRate);setAuto('aYrs',P.mYears);
+  autoDefaults();
+  setAuto('rM_pd',autoPD(ltvInit));setAuto('rM_lgd',autoLGD(ltvInit));
+  setAuto('lifePD',Math.min(100,4*clamp(num('elP_pd'),0,100)));
+  renderAll();
+}
+function renderAll(){
+  renderDep();renderNSFR();renderLTV1();renderBook();renderCap();
+  renderPlay();renderEL();renderSlip();
+  renderAff();renderRate();renderHome();
+}
+const views=['home','v1','v2','v3','sources','glossary','feedback','admin'];
+function route(target){
+  let h=typeof target==='string'?target:location.hash.replace('#','');if(!views.includes(h))h='home';
+  if(h==='admin'&&!fb.admin)h='feedback'; // inbox is for signed-in admins only
+  views.forEach(v=>$(v).classList.toggle('on',v===h));
+  $('profile').style.display=['sources','glossary','feedback','admin'].includes(h)?'none':'';
+  document.querySelectorAll('nav a').forEach(a=>{a.getAttribute('href')==='#'+h?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current');});
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',()=>route());
+// Work even where hash changes are not supported (e.g. file previews): handle clicks in JS.
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[href^="#"]');
+  if(!a)return;
+  const h=a.getAttribute('href').slice(1);
+  if(!views.includes(h))return;
+  e.preventDefault();
+  try{history.replaceState(null,'','#'+h);}catch(err){}
+  route(h);
+});
+
+/* ---------- floating tooltip (not clipped by scrolling tables) ---------- */
+(function(){
+  const tip=document.createElement('div');tip.id='tip';tip.setAttribute('role','tooltip');document.body.appendChild(tip);
+  let cur=null;
+  const hide=()=>{cur=null;tip.style.display='none';};
+  const show=el=>{
+    cur=el;tip.textContent=el.getAttribute('data-def');tip.style.display='block';
+    const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
+    const x=Math.min(Math.max(8,r.left),Math.max(8,innerWidth-w-8));
+    let y=r.bottom+6;if(y+h>innerHeight-8)y=r.top-h-6;
+    tip.style.left=x+'px';tip.style.top=Math.max(8,y)+'px';
+  };
+  const target=e=>e.target.closest?e.target.closest('[data-def]'):null;
+  document.addEventListener('mouseover',e=>{const el=target(e);if(el){if(el!==cur)show(el);}else if(cur)hide();});
+  document.addEventListener('focusin',e=>{const el=target(e);if(el)show(el);});
+  document.addEventListener('focusout',hide);
+  document.addEventListener('click',hide);
+  window.addEventListener('scroll',hide,true);
+  window.addEventListener('resize',hide);
+})();
+/* ================= FEEDBACK =================
+   Stored in the claude.ai artifact database, outside this HTML, so it survives republishing:
+     feedback/<uid>  {items:[{id,cat,text,at}]}      written by the submitter; Editors and the owner read all
+     replies/<uid>   {byItem:{<itemId>:{text,at}}}   written only by the owner; that submitter and Editors read it
+   Sign-in is the viewer's claude.ai account. Signed-out and view-only visitors cannot submit or see any idea.
+   shortcut: one reply per idea, no email to the submitter, no archive. Delete is owner-only and permanent. */
+const FB_CATS={new:'New feature or topic',explain:'Clearer explanation',fix:'Correction',other:'Other'};
+const fb={db:null,user:null,uid:null,blocked:'',admin:false,owner:false,items:{},reps:{},filter:'all',drafts:{},seq:0};
+const mk=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
+const fmtDate=s=>new Date(s).toLocaleString();
+// Form stays visible and the button stays clickable; if sending is not possible, clicking explains why.
+function fbNotice(msg){fb.blocked=msg;const n=$('fbState');n.textContent=msg;n.hidden=false;}
+function replyBlock(rep){
+  const b=mk('div',null,'callout');
+  if(rep){b.append(mk('b','Reply from the site owner · '+fmtDate(rep.at)),mk('span',rep.text,'pre'));}
+  else b.append(mk('span','No reply yet.'));
+  return b;
+}
+function renderMine(rows){
+  $('fbMine').hidden=!rows.length;
+  const list=$('fbMineList');list.replaceChildren();
+  rows.forEach(r=>{
+    const c=mk('div',null,'card');
+    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',' · '+fmtDate(r.at),'note'),mk('p',r.text,'pre'),replyBlock(r.reply));
+    list.append(c);
+  });
+}
+async function sendReply(r,ta,btn,st){
+  const text=ta.value.trim();
+  if(!text){st.textContent='Write a reply first.';return;}
+  btn.disabled=true;st.textContent='Saving…';
+  try{
+    const ref=fb.db.doc('replies/'+r.uid),s=await ref.get();
+    const by={...((s.exists&&(s.data()||{}).byItem)||{}),[r.id]:{text,at:new Date().toISOString()}};
+    await ref.set({byItem:by});
+    delete fb.drafts[r.id];st.textContent='Reply saved.';
+  }catch(err){st.textContent='Could not save ('+((err&&err.code)||'error')+').';}
+  finally{btn.disabled=false;}
+}
+// Two clicks to delete (the viewer blocks confirm() dialogs). Removes the idea and its reply.
+function confirmDelete(r,del,st){
+  if(del.dataset.armed){deleteIdea(r,del,st);return;}
+  del.dataset.armed='1';del.textContent='Confirm delete';st.textContent=' This removes the idea and its reply for good.';
+  setTimeout(()=>{if(del.isConnected&&del.dataset.armed&&!del.disabled){delete del.dataset.armed;del.textContent='Delete';st.textContent='';}},5000);
+}
+async function deleteIdea(r,del,st){
+  del.disabled=true;st.textContent=' Deleting…';
+  try{
+    const ref=fb.db.doc('feedback/'+r.uid),s=await ref.get();
+    const items=((s.exists&&(s.data()||{}).items)||[]).filter(i=>i.id!==r.id);
+    if(items.length)await ref.set({items});else await ref.delete();
+    const rr=fb.db.doc('replies/'+r.uid),rs=await rr.get();
+    const by={...((rs.exists&&(rs.data()||{}).byItem)||{})};
+    if(by[r.id]){delete by[r.id];if(Object.keys(by).length)await rr.set({byItem:by});else await rr.delete();}
+    delete fb.drafts[r.id]; // the live snapshot removes the card
+  }catch(err){st.textContent=' Could not delete ('+((err&&err.code)||'error')+').';del.disabled=false;}
+}
+async function renderAdmin(rows,seq){
+  const ps=await fb.user.profiles([...new Set(rows.map(r=>r.uid))]);
+  if(seq!==fb.seq)return; // a newer snapshot arrived while names loaded
+  const open=rows.filter(r=>!r.reply).length;
+  $('adSummary').textContent=rows.length?`${rows.length} idea${rows.length===1?'':'s'} · ${open} not replied`:'No ideas yet.';
+  const shown=rows.filter(r=>fb.filter==='all'||(fb.filter==='new'?!r.reply:!!r.reply));
+  const list=$('adList');list.replaceChildren();
+  shown.forEach(r=>{
+    const c=mk('div',null,'card');
+    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',` · ${(ps[r.uid]&&ps[r.uid].name)||'Someone'} · ${fmtDate(r.at)}`,'note'),mk('p',r.text,'pre'));
+    if(fb.owner){
+      const ta=mk('textarea');ta.maxLength=1000;ta.setAttribute('aria-label','Reply to this idea');
+      ta.value=fb.drafts[r.id]!==undefined?fb.drafts[r.id]:(r.reply?r.reply.text:'');
+      ta.oninput=()=>{fb.drafts[r.id]=ta.value;};
+      const btn=mk('button',r.reply?'Update reply':'Send reply','btn sm');btn.type='button';
+      const st=mk('span',r.reply?' Replied '+fmtDate(r.reply.at):'','note');st.setAttribute('role','status');
+      btn.onclick=()=>sendReply(r,ta,btn,st);
+      const del=mk('button','Delete','btn alt sm');del.type='button';
+      del.onclick=()=>confirmDelete(r,del,st);
+      c.append(ta,mk('br'),btn,' ',del,st);
+    }else c.append(replyBlock(r.reply));
+    list.append(c);
+  });
+}
+function fbRender(){
+  const rows=[];
+  Object.entries(fb.items).forEach(([uid,list])=>list.forEach(i=>rows.push({...i,uid,reply:(fb.reps[uid]||{})[i.id]||null})));
+  rows.sort((a,b)=>(a.at<b.at?1:-1));
+  renderMine(rows.filter(r=>r.uid===fb.uid));
+  if(fb.admin)renderAdmin(rows,++fb.seq);
+}
+async function initFeedback(){
+  $('fbText').oninput=()=>{$('fbLen').textContent=$('fbText').value.length;};
+  // Until the database answers, a click must never fall through to a real form submit (page reload).
+  $('fbForm').onsubmit=e=>{e.preventDefault();$('fbStatus').textContent=fb.blocked||'Still connecting to the database. Try again in a moment.';};
+  document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{
+    fb.filter=b.dataset.ad;document.querySelectorAll('[data-ad]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
+  });
+  const claude=window.claude;
+  if(!claude||!claude.use){$('fbWho').textContent='Not signed in.';fbNotice('This form works in the published version of the site, where ideas are saved. Open the shared link to use it.');return;}
+  try{fb.db=await claude.use('db');fb.user=await claude.use('user');}catch(e){}
+  if(!fb.db||!fb.user){$('fbWho').textContent='Not signed in.';fbNotice('Sign in to claude.ai to send an idea.');return;}
+  fb.uid=await fb.user.id();
+  const me=await fb.user.me();
+  fb.admin=await fb.user.canEdit();fb.owner=await fb.user.isOwner();
+  $('fbWho').textContent='Signed in as '+(me.name||'you')+(fb.admin?' · admin':'')+'.';
+  $('navAdmin').hidden=!fb.admin;
+  const canWrite=await fb.user.can('data.write');
+  if(!fb.uid||canWrite===false)fbNotice('Sending ideas is open to invited contributors. Ask the site owner for contributor access.');
+  if(!fb.blocked)$('fbForm').onsubmit=async e=>{
+    e.preventDefault();
+    const text=$('fbText').value.trim();if(!text)return;
+    const btn=$('fbSubmit'),st=$('fbStatus');btn.disabled=true;st.textContent='Sending…';
+    try{
+      const ref=fb.db.doc('feedback/'+fb.uid);
+      const snap=await ref.get();
+      const items=snap.exists?[...((snap.data()||{}).items||[])]:[];
+      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat:$('fbCat').value,text,at:new Date().toISOString()});
+      await ref.set({items:items.slice(-50)});
+      $('fbText').value='';$('fbLen').textContent='0';st.textContent='Thank you. Your idea was sent.';
+    }catch(err){st.textContent='Could not send your idea ('+((err&&err.code)||'error')+'). Please try again later.';}
+    finally{btn.disabled=false;}
+  };
+  // Subscribe once. Admins read both collections; everyone else reads only their own two documents.
+  const timer=setTimeout(()=>{$('adSummary').textContent='The database cannot be reached yet.';},10000);
+  const fail=err=>{clearTimeout(timer);$('adSummary').textContent='Could not load ideas ('+((err&&err.code)||'error')+').';};
+  if(fb.admin){
+    fb.db.collection('feedback').onSnapshot(s=>{clearTimeout(timer);fb.items={};s.docs.forEach(d=>fb.items[d.id]=(d.data()||{}).items||[]);fbRender();},fail);
+    fb.db.collection('replies').onSnapshot(s=>{fb.reps={};s.docs.forEach(d=>fb.reps[d.id]=(d.data()||{}).byItem||{});fbRender();},fail);
+    if(location.hash==='#admin')route('admin');
+  }else if(fb.uid){
+    fb.db.doc('feedback/'+fb.uid).onSnapshot(s=>{clearTimeout(timer);fb.items=s.exists?{[fb.uid]:(s.data()||{}).items||[]}:{};fbRender();},fail);
+    fb.db.doc('replies/'+fb.uid).onSnapshot(s=>{fb.reps=s.exists?{[fb.uid]:(s.data()||{}).byItem||{}}:{};fbRender();},fail);
+  }
+}
+function init(){
+  buildProfile();writeProfile();buildCap();buildEL();srcTable();
+  hydrate();
+  // deposit mode
+  document.querySelectorAll('[data-dep]').forEach(b=>b.onclick=()=>{S.depMode=b.dataset.dep;document.querySelectorAll('[data-dep]').forEach(x=>x.setAttribute('aria-pressed',x===b));C=calc();renderDep();renderNSFR();renderCap();renderHome();});
+  $('ltv1').oninput=renderLTV1;
+  // PD playground
+  bindPair('pgPD','pgPDn',renderPlay,0,100);bindPair('pgLGD','pgLGDn',renderPlay,0,100);bindPair('pgEAD','pgEADn',renderPlay,0,1e9);
+  // slip
+  $('late').oninput=renderSlip;$('lifePD').addEventListener('input',()=>{touched.add('lifePD');renderSlip();});
+  ['elP_pd','elP_lgd'].forEach(id=>$(id).addEventListener('input',()=>{setAuto('lifePD',Math.min(100,4*clamp(num('elP_pd'),0,100)));renderSlip();}));
+  // affordability
+  ['aInc','aDebt','aLive','aLoan','aRate','aYrs','aStress','aLim1','aLim2'].forEach(id=>{$(id).oninput=renderAff;});
+  markTouch(['aInc','aDebt','aLoan','aRate','aYrs','lifePD']);
+  $('aLive').value=1100;
+  // rate
+  S.prod='mort';loadAssump();
+  const prodSet=p=>{S.prod=p;$('pMort').setAttribute('aria-pressed',p==='mort');$('pLoan').setAttribute('aria-pressed',p==='loan');$('mortCtl').hidden=p!=='mort';$('loanCtl').hidden=p!=='loan';loadAssump();renderRate();};
+  $('pMort').onclick=()=>prodSet('mort');$('pLoan').onclick=()=>prodSet('loan');
+  $('ltv3').oninput=()=>{const l=num('ltv3');setAuto('rM_pd',autoPD(l));setAuto('rM_lgd',autoLGD(l));renderRate();};
+  ['rM_pd','rM_lgd'].forEach(id=>$(id).addEventListener('input',()=>{touched.add(id);renderRate();}));
+  bindPair('rL_pdr','rL_pd',renderRate,0,100);$('rL_lgd').oninput=renderRate;
+  ['fnd','liq','opx','mrg','coe'].forEach(id=>$(id).oninput=renderRate);
+  $('gSearch').oninput=gDraw;gDraw();
+  onProfile();route();initFeedback();
+}
+init();
+</script>
+</body>
+</html>
