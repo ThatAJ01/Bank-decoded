@@ -1157,7 +1157,7 @@ function renderMine(rows){
   const list=$('fbMineList');list.replaceChildren();
   rows.forEach(r=>{
     const c=mk('div',null,'card');
-    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',' · '+fmtDate(r.at),'note'),mk('p',r.text,'pre'),replyBlock(r.reply));
+    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',' · '+(r.alias||'No alias')+' · '+fmtDate(r.at),'note'),mk('p',r.text,'pre'),replyBlock(r.reply));
     list.append(c);
   });
 }
@@ -1271,7 +1271,7 @@ async function startSupabase(){
     const{data,error}=await sb.from('feedback').select('id,user_id,author_email,alias,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
     if(error){$('adSummary').textContent='Could not load ideas ('+errText(error)+').';return;}
     fb.rows=data.map(x=>{const rep=Array.isArray(x.replies)?x.replies[0]:x.replies;
-      return{id:x.id,uid:x.user_id,who:[x.alias,x.author_email].filter(Boolean).join(' · ')||'Anonymous',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
+      return{id:x.id,uid:x.user_id,alias:x.alias||'',who:[x.alias,x.author_email].filter(Boolean).join(' · ')||'Anonymous',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
     fbRender();
   };
   const apply=async session=>{
