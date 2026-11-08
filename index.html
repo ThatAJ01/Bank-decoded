@@ -108,6 +108,30 @@ footer dd{margin:0;min-width:0}
 select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
 textarea{resize:vertical;min-height:110px}
 .pre{white-space:pre-wrap;overflow-wrap:anywhere}
+/* feedback cards: name, colour-coded type, date */
+.hdr{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin-bottom:6px}
+.who{font-weight:700;font-size:1.02rem;overflow-wrap:anywhere}
+.when{color:var(--muted);font-size:.82rem}
+.pill{display:inline-block;font:inherit;font-size:.78rem;font-weight:600;padding:2px 10px;border-radius:999px;color:var(--cc,var(--accent));background:color-mix(in srgb,var(--cc,var(--accent)) 16%,transparent);border:1px solid color-mix(in srgb,var(--cc,var(--accent)) 45%,transparent)}
+button.pill{cursor:pointer}
+button.pill[aria-pressed="true"]{background:var(--cc,var(--accent));color:var(--on-accent)}
+.cat-new{--cc:var(--c2)}.cat-explain{--cc:var(--c7)}.cat-fix{--cc:var(--c3)}.cat-other{--cc:var(--c4)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tone-positive{--cc:var(--ok)}.tone-negative{--cc:var(--bad)}
+.opt{display:inline-flex;align-items:center;gap:6px;font-weight:500;margin:4px 14px 4px 0;color:var(--cc,var(--ink))}
+fieldset.tone{margin:12px 0 4px}
+/* admin statistics */
+.brow{display:grid;grid-template-columns:minmax(130px,190px) 1fr auto;gap:10px;align-items:center;margin:6px 0}
+.brow .pill{justify-self:start}
+.btrack{height:14px;background:var(--bg);border:1px solid var(--line);border-radius:7px;overflow:hidden;display:flex}
+.btrack>i{display:block;height:100%}
+.cols{display:flex;align-items:flex-end;gap:4px;height:96px;border-bottom:1px solid var(--line);margin-top:8px}
+.cols>div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem;margin-top:4px}
+.lg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.78rem;color:var(--muted);margin-top:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.brow{grid-template-columns:1fr auto}.brow>:first-child{grid-column:1/-1}}
 .gl{margin:0}
 .gl h3{margin:0 0 4px}
 .gl .ref{font-size:.84rem;color:var(--muted);border-top:1px dashed var(--line);margin-top:8px;padding-top:6px}
@@ -545,6 +569,11 @@ textarea{resize:vertical;min-height:110px}
         <option value="fix">Correction</option>
         <option value="other">Other</option>
       </select>
+      <fieldset class="tone"><legend>Positive or negative? (optional)</legend>
+        <label class="opt"><input type="radio" name="fbTone" value="" checked> Not specified</label>
+        <label class="opt tone-positive"><input type="radio" name="fbTone" value="positive"> Positive</label>
+        <label class="opt tone-negative"><input type="radio" name="fbTone" value="negative"> Negative</label>
+      </fieldset>
       <label for="fbText">Your idea</label>
       <textarea id="fbText" maxlength="1000" required></textarea>
       <p class="note"><span id="fbLen">0</span> / 1000 characters</p>
@@ -562,13 +591,23 @@ textarea{resize:vertical;min-height:110px}
 <!-- ================= ADMIN ================= -->
 <section class="view" id="admin">
   <span class="tag">Admin</span>
-  <h1>Feedback inbox</h1>
+  <h1>Admin dashboard</h1>
+  <h2>Statistics</h2>
+  <div id="adStats"></div>
+  <h2>Inbox</h2>
   <p class="note"><span id="adSummary">Loading…</span> <button type="button" class="btn alt sm" id="adRefresh">Refresh</button></p>
   <span class="seg" role="group" aria-label="Filter">
     <button data-ad="all" aria-pressed="true">All</button>
     <button data-ad="new" aria-pressed="false">Not replied</button>
     <button data-ad="done" aria-pressed="false">Replied</button>
   </span>
+  <div class="chips" id="adCats" role="group" aria-label="Filter by type">
+    <button type="button" class="pill" data-cat="all" aria-pressed="true">All types</button>
+    <button type="button" class="pill cat-new" data-cat="new" aria-pressed="false">New feature or topic</button>
+    <button type="button" class="pill cat-explain" data-cat="explain" aria-pressed="false">Clearer explanation</button>
+    <button type="button" class="pill cat-fix" data-cat="fix" aria-pressed="false">Correction</button>
+    <button type="button" class="pill cat-other" data-cat="other" aria-pressed="false">Other</button>
+  </div>
   <div id="adList"></div>
 </section>
 </main>
@@ -1130,7 +1169,7 @@ const SUPABASE_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/d
 
 const FB_CATS={new:'New feature or topic',explain:'Clearer explanation',fix:'Correction',other:'Other'};
 // rows: [{id,uid,who,cat,text,at,reply:{text,at}|null}] newest first
-const fb={be:null,uid:null,admin:false,owner:false,rows:[],filter:'all',drafts:{},blocked:'',refresh:null};
+const fb={be:null,uid:null,admin:false,owner:false,rows:[],filter:'all',cat:'all',drafts:{},blocked:'',refresh:null};
 const mk=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
 const fmtDate=s=>new Date(s).toLocaleString();
 const errText=e=>(e&&(e.code||e.message))||'error';
@@ -1152,12 +1191,21 @@ function replyBlock(rep){
   else b.append(mk('span','No reply yet.'));
   return b;
 }
+// Card header: name in bold, then the colour-coded type, then date and time.
+function cardHead(name,r){
+  const h=mk('div',null,'hdr');
+  const tags=mk('div',null,'tags');
+  tags.append(mk('span',FB_CATS[r.cat]||'Other','pill cat-'+(FB_CATS[r.cat]?r.cat:'other')));
+  if(r.tone)tags.append(mk('span',r.tone==='positive'?'Positive':'Negative','pill tone-'+r.tone));
+  h.append(mk('span',name,'who'),tags,mk('span',fmtDate(r.at),'when'));
+  return h;
+}
 function renderMine(rows){
   $('fbMine').hidden=!rows.length;
   const list=$('fbMineList');list.replaceChildren();
   rows.forEach(r=>{
     const c=mk('div',null,'card');
-    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',' · '+(r.alias||'No alias')+' · '+fmtDate(r.at),'note'),mk('p',r.text,'pre'),replyBlock(r.reply));
+    c.append(cardHead(r.alias||'No alias',r),mk('p',r.text,'pre'),replyBlock(r.reply));
     list.append(c);
   });
 }
@@ -1180,14 +1228,60 @@ async function doDelete(r,del,st){
   try{await fb.be.remove(r);delete fb.drafts[r.id];if(fb.refresh)await fb.refresh();}
   catch(err){st.textContent=' Could not delete ('+errText(err)+').';del.disabled=false;}
 }
+// Statistics above the inbox: numbers, ideas by type, positive/negative by type, ideas per day. Plain HTML, no chart library.
+function renderStats(rows){
+  const box=$('adStats');box.replaceChildren();
+  if(!rows.length){box.append(mk('p','Statistics appear when the first idea arrives.','note'));return;}
+  const cats=Object.keys(FB_CATS),total=rows.length,open=rows.filter(r=>!r.reply).length;
+  const count=(f)=>rows.filter(f).length;
+  const kp=mk('div',null,'kpis');
+  [['Ideas',total],['Not replied',open],['Reply rate',Math.round((total-open)/total*100)+'%'],['Last 7 days',count(r=>Date.now()-Date.parse(r.at)<7*864e5)],['Positive',count(r=>r.tone==='positive')],['Negative',count(r=>r.tone==='negative')]]
+    .forEach(([a,b])=>{const d=mk('div',null,'kpi');d.append(mk('span',a),mk('strong',String(b)));kp.append(d);});
+  box.append(kp);
+  const row=(c,fill,right)=>{ // one labelled bar: type pill, track, numbers
+    const el=mk('div',null,'brow cat-'+c);
+    el.append(mk('span',FB_CATS[c],'pill cat-'+c),fill,mk('span',right,'note'));
+    return el;
+  };
+  box.append(mk('h3','Ideas by type'));
+  const max=Math.max(...cats.map(c=>count(r=>r.cat===c)),1);
+  cats.forEach(c=>{
+    const n=count(r=>r.cat===c),t=mk('div',null,'btrack'),i=mk('i');i.style.width=(n/max*100)+'%';i.style.background='var(--cc)';t.append(i);
+    box.append(row(c,t,n+' ('+Math.round(n/total*100)+'%)'));
+  });
+  box.append(mk('h3','Positive or negative, by type'));
+  cats.forEach(c=>{
+    const of=rows.filter(r=>r.cat===c),n=of.length||1,p=of.filter(r=>r.tone==='positive').length,g=of.filter(r=>r.tone==='negative').length,u=of.length-p-g;
+    const t=mk('div',null,'btrack');
+    [[p,'var(--ok)'],[g,'var(--bad)'],[u,'var(--line)']].forEach(([v,col])=>{const i=mk('i');i.style.width=(v/n*100)+'%';i.style.background=col;t.append(i);});
+    box.append(row(c,t,of.length?p+' pos · '+g+' neg · '+u+' none':'no ideas'));
+  });
+  const lg=mk('div',null,'lg');
+  [['var(--ok)','Positive'],['var(--bad)','Negative'],['var(--line)','Not specified']].forEach(([col,l])=>{const s=mk('span',l);const i=mk('i');i.style.background=col;s.prepend(i);lg.append(s);});
+  box.append(lg);
+  box.append(mk('h3','Ideas per day, last 14 days'));
+  const days=[];for(let d=13;d>=0;d--){const x=new Date();x.setHours(0,0,0,0);x.setDate(x.getDate()-d);days.push(x);}
+  const per=days.map(x=>count(r=>{const t=new Date(r.at);return t>=x&&t<new Date(x.getTime()+864e5);}));
+  const top=Math.max(...per,1),cols=mk('div',null,'cols');cols.setAttribute('role','img');
+  cols.setAttribute('aria-label','Ideas per day, last 14 days: '+per.join(', '));
+  per.forEach((v,k)=>{const b=mk('div');b.style.height=(v/top*100)+'%';b.title=days[k].toLocaleDateString()+': '+v;cols.append(b);});
+  const ax=mk('div',null,'axis');ax.append(mk('span',days[0].toLocaleDateString()),mk('span','peak '+top+' per day'),mk('span','today'));
+  box.append(cols,ax);
+}
 function renderAdmin(rows){
+  renderStats(rows);
   const open=rows.filter(r=>!r.reply).length;
   $('adSummary').textContent=rows.length?`${rows.length} idea${rows.length===1?'':'s'} · ${open} not replied`:'No ideas yet.';
-  const shown=rows.filter(r=>fb.filter==='all'||(fb.filter==='new'?!r.reply:!!r.reply));
+  const shown=rows.filter(r=>(fb.filter==='all'||(fb.filter==='new'?!r.reply:!!r.reply))&&(fb.cat==='all'||r.cat===fb.cat));
+  document.querySelectorAll('#adCats [data-cat]').forEach(b=>{
+    const k=b.dataset.cat,n=k==='all'?rows.length:rows.filter(r=>r.cat===k).length;
+    b.textContent=(k==='all'?'All types':FB_CATS[k])+' ('+n+')';
+  });
+  if(rows.length&&shown.length!==rows.length)$('adSummary').textContent+=' · showing '+shown.length;
   const list=$('adList');list.replaceChildren();
   shown.forEach(r=>{
     const c=mk('div',null,'card');
-    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',` · ${r.who||'Someone'} · ${fmtDate(r.at)}`,'note'),mk('p',r.text,'pre'));
+    c.append(cardHead(r.who||'Someone',r),mk('p',r.text,'pre'));
     if(fb.owner){
       const ta=mk('textarea');ta.maxLength=1000;ta.setAttribute('aria-label','Reply to this idea');
       ta.value=fb.drafts[r.id]!==undefined?fb.drafts[r.id]:(r.reply?r.reply.text:'');
@@ -1217,10 +1311,10 @@ async function startArtifact(claude){
   fbSetUser({label:'Signed in as '+(me.name||'you')+(admin?' · admin':'')+'.',admin,owner,
     blocked:(!uid||canWrite===false)?'Sending ideas is open to invited contributors. Ask the site owner for contributor access.':''});
   fb.be={
-    async send(cat,text,alias){
+    async send(cat,text,alias,tone){
       const ref=db.doc('feedback/'+uid),snap=await ref.get();
       const items=snap.exists?[...((snap.data()||{}).items||[])]:[];
-      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat,text,alias:alias||'',at:new Date().toISOString()});
+      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat,text,alias:alias||'',tone:tone||'',at:new Date().toISOString()});
       await ref.set({items:items.slice(-50)});
     },
     async reply(r,text){
@@ -1241,7 +1335,7 @@ async function startArtifact(claude){
   let items0={},reps0={};
   const rebuild=async()=>{
     const rows=[];
-    Object.entries(items0).forEach(([u,list])=>list.forEach(i=>rows.push({id:i.id,uid:u,cat:i.cat,text:i.text,alias:i.alias||'',at:i.at,reply:(reps0[u]||{})[i.id]||null})));
+    Object.entries(items0).forEach(([u,list])=>list.forEach(i=>rows.push({id:i.id,uid:u,cat:i.cat,text:i.text,alias:i.alias||'',tone:i.tone||'',at:i.at,reply:(reps0[u]||{})[i.id]||null})));
     rows.sort((a,b)=>(a.at<b.at?1:-1));
     if(admin){const ps=await user.profiles([...new Set(rows.map(r=>r.uid))]);rows.forEach(r=>{r.who=r.alias||(ps[r.uid]&&ps[r.uid].name)||'Someone';});}
     fb.rows=rows;fbRender();
@@ -1262,16 +1356,28 @@ async function startSupabase(){
   if(!window.supabase)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=SUPABASE_LIB;s.onload=ok;s.onerror=no;document.head.append(s);});
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   fb.be={
-    async send(cat,text,alias){const{error}=await sb.from('feedback').insert({category:cat,body:text,alias:alias||null});if(error)throw error;},
+    async send(cat,text,alias,tone){
+      const row={category:cat,body:text,alias:alias||null};
+      if(tone)row.sentiment=tone;   // only sent when chosen, so an unset choice never touches the column
+      const{error}=await sb.from('feedback').insert(row);if(error)throw error;
+    },
     async reply(r,text){const{error}=await sb.from('replies').upsert({feedback_id:r.id,body:text,created_at:new Date().toISOString()},{onConflict:'feedback_id'});if(error)throw error;},
     async remove(r){const{error}=await sb.from('feedback').delete().eq('id',r.id);if(error)throw error;}
   };
   fb.refresh=async()=>{
     if(!fb.uid)return;
-    const{data,error}=await sb.from('feedback').select('id,user_id,author_email,alias,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
-    if(error){$('adSummary').textContent='Could not load ideas ('+errText(error)+').';return;}
+    const{data,error}=await sb.from('feedback').select('id,user_id,author_email,alias,sentiment,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
+    if(error){
+      // 42501 / 401 means the request went out as a signed-out visitor (expired session) or the table permissions are missing.
+      if(error.code==='42501'||error.code==='PGRST301'||error.code==='PGRST303'||error.status===401){
+        const{data:s}=await sb.auth.getSession();
+        if(!s.session){await apply(null);$('auMsg').textContent='Your session has ended. Please sign in again.';return;}
+        $('adSummary').textContent='Permission denied ('+errText(error)+'). Sign out and sign in again. If it keeps happening, run supabase-fix-permissions.sql in Supabase.';return;
+      }
+      $('adSummary').textContent='Could not load ideas ('+errText(error)+').';return;
+    }
     fb.rows=data.map(x=>{const rep=Array.isArray(x.replies)?x.replies[0]:x.replies;
-      return{id:x.id,uid:x.user_id,alias:x.alias||'',who:[x.alias,x.author_email].filter(Boolean).join(' · ')||'Anonymous',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
+      return{id:x.id,uid:x.user_id,alias:x.alias||'',tone:x.sentiment||'',who:[x.alias,x.author_email].filter(Boolean).join(' · ')||'Anonymous',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
     fbRender();
   };
   const apply=async session=>{
@@ -1319,6 +1425,9 @@ async function initFeedback(){
   document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{
     fb.filter=b.dataset.ad;document.querySelectorAll('[data-ad]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
   });
+  document.querySelectorAll('#adCats [data-cat]').forEach(b=>b.onclick=()=>{
+    fb.cat=b.dataset.cat;document.querySelectorAll('#adCats [data-cat]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
+  });
   $('adRefresh').onclick=()=>{if(fb.refresh)fb.refresh();};
   // One click handler for every state. A click must never fall through to a real form submit (page reload).
   $('fbForm').onsubmit=async e=>{
@@ -1329,7 +1438,8 @@ async function initFeedback(){
     const text=$('fbText').value.trim();if(!text)return;
     const btn=$('fbSubmit');btn.disabled=true;st.textContent='Sending…';
     try{
-      await fb.be.send($('fbCat').value,text,$('fbAlias').value.trim());
+      await fb.be.send($('fbCat').value,text,$('fbAlias').value.trim(),(document.querySelector('input[name=fbTone]:checked')||{}).value||'');
+      document.querySelector('input[name=fbTone][value=""]').checked=true;
       $('fbText').value='';$('fbLen').textContent='0';st.textContent='Thank you. Your idea was sent.';
       if(fb.refresh)await fb.refresh();
     }catch(err){st.textContent='Could not send your idea ('+errText(err)+'). Please try again later.';}
