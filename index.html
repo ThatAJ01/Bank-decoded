@@ -62,7 +62,7 @@ tr.total td{font-weight:700;border-top:2px solid var(--line)}
 label{display:block;font-weight:600;font-size:.84rem;margin:8px 0 2px}
 label.chk{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:8px 0}
 input[type=range]{width:100%;accent-color:var(--accent)}
-input[type=number],input[type=email],input[type=password]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=number],input[type=email],input[type=password],input[type=text]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
 td input[type=number]{width:92px;text-align:right}
 .out{font-variant-numeric:tabular-nums}
 .big{font-size:1.5rem;font-weight:700}
@@ -523,19 +523,21 @@ textarea{resize:vertical;min-height:110px}
   <p class="lead">Tell us what is missing, unclear or wrong. One idea per message works best.</p>
   <p class="note"><span id="fbWho" role="status"></span> <button type="button" class="btn alt sm" id="auOut" hidden>Sign out</button></p>
   <div class="card" id="fbAuth" hidden>
-    <b>Sign in to send an idea</b>
+    <b>Send an idea</b> <span class="note">Sign in, create an account, or continue without one. Without an account, replies to you appear only on this device.</span>
     <form id="fbAuthForm">
       <label for="auEmail">Email</label>
       <input type="email" id="auEmail" autocomplete="email" required>
       <label for="auPass">Password (at least 8 characters)</label>
       <input type="password" id="auPass" autocomplete="current-password" minlength="8" required>
-      <p><button class="btn" type="submit" id="auIn">Sign in</button> <button class="btn alt" type="button" id="auUp">Create account</button></p>
+      <p><button class="btn" type="submit" id="auIn">Sign in</button> <button class="btn alt" type="button" id="auUp">Create account</button> <button class="btn alt" type="button" id="auAnon">Continue without an account</button></p>
       <p id="auMsg" class="note" role="status"></p>
     </form>
   </div>
   <div class="card">
     <p id="fbState" class="note" hidden></p>
     <form id="fbForm">
+      <label for="fbAlias">Name or alias (optional)</label>
+      <input type="text" id="fbAlias" maxlength="40" autocomplete="nickname" placeholder="Leave empty to stay anonymous">
       <label for="fbCat">Type</label>
       <select id="fbCat">
         <option value="new">New feature or topic</option>
@@ -549,7 +551,7 @@ textarea{resize:vertical;min-height:110px}
       <button class="btn" type="submit" id="fbSubmit">Send idea</button>
       <p id="fbStatus" class="note" role="status"></p>
     </form>
-    <p class="note">Your ideas are stored with your account. Only you and the site owner can see them. The owner sees the text and your email address, and may reply here. Do not include personal or financial details.</p>
+    <p class="note">Only you and the site owner can see your ideas. The owner sees the text, the name or alias you enter (optional) and, if you have an account, your email address. The owner may reply here. Do not include personal or financial details.</p>
   </div>
   <div id="fbMine" hidden>
     <h2>Your ideas and replies</h2>
@@ -598,7 +600,7 @@ textarea{resize:vertical;min-height:110px}
 
       <h3>Privacy</h3>
       <p>Bank Decoded is the controller of personal data processed through this site under the General Data Protection Regulation (EU) 2016/679. The calculators run in your browser. The numbers you enter in the profile are not sent to us and are not stored.</p>
-      <p>If you create an account and send feedback, we store your email address, your message, the type you chose and the date. We use them only to run sign-in, and to read and reply to your idea. Legal basis: your consent, given by creating the account and sending the form (Art. 6(1)(a) GDPR). Only you and Bank Decoded can see your submission. We keep it until we delete it or you ask us to. The data is stored with our database provider Supabase. <span class="ph">[confirm provider, data region and transfer terms]</span></p>
+      <p>If you send feedback, we store your message, the type you chose, the date and the name or alias you choose to enter (optional). If you create an account we also store your email address. If you continue without an account, we create a random anonymous identifier in your browser and store no email address. We use this data only to run sign-in, and to read and reply to your idea. Legal basis: your consent, given by sending the form (Art. 6(1)(a) GDPR). Only you and Bank Decoded can see your submission. We keep it until we delete it or you ask us to. The data is stored with our database provider Supabase. <span class="ph">[confirm provider, data region and transfer terms]</span></p>
       <p>You can ask us to show, correct or delete your data, restrict or object to its use, or withdraw consent at any time, by writing to <span class="ph">[privacy email]</span>. You can also complain to your national data protection authority.</p>
 
       <h3>Cookies</h3>
@@ -1215,10 +1217,10 @@ async function startArtifact(claude){
   fbSetUser({label:'Signed in as '+(me.name||'you')+(admin?' · admin':'')+'.',admin,owner,
     blocked:(!uid||canWrite===false)?'Sending ideas is open to invited contributors. Ask the site owner for contributor access.':''});
   fb.be={
-    async send(cat,text){
+    async send(cat,text,alias){
       const ref=db.doc('feedback/'+uid),snap=await ref.get();
       const items=snap.exists?[...((snap.data()||{}).items||[])]:[];
-      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat,text,at:new Date().toISOString()});
+      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat,text,alias:alias||'',at:new Date().toISOString()});
       await ref.set({items:items.slice(-50)});
     },
     async reply(r,text){
@@ -1239,9 +1241,9 @@ async function startArtifact(claude){
   let items0={},reps0={};
   const rebuild=async()=>{
     const rows=[];
-    Object.entries(items0).forEach(([u,list])=>list.forEach(i=>rows.push({id:i.id,uid:u,cat:i.cat,text:i.text,at:i.at,reply:(reps0[u]||{})[i.id]||null})));
+    Object.entries(items0).forEach(([u,list])=>list.forEach(i=>rows.push({id:i.id,uid:u,cat:i.cat,text:i.text,alias:i.alias||'',at:i.at,reply:(reps0[u]||{})[i.id]||null})));
     rows.sort((a,b)=>(a.at<b.at?1:-1));
-    if(admin){const ps=await user.profiles([...new Set(rows.map(r=>r.uid))]);rows.forEach(r=>{r.who=(ps[r.uid]&&ps[r.uid].name)||'Someone';});}
+    if(admin){const ps=await user.profiles([...new Set(rows.map(r=>r.uid))]);rows.forEach(r=>{r.who=r.alias||(ps[r.uid]&&ps[r.uid].name)||'Someone';});}
     fb.rows=rows;fbRender();
   };
   const timer=setTimeout(()=>{$('adSummary').textContent='The database cannot be reached yet.';},10000);
@@ -1260,34 +1262,39 @@ async function startSupabase(){
   if(!window.supabase)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=SUPABASE_LIB;s.onload=ok;s.onerror=no;document.head.append(s);});
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   fb.be={
-    async send(cat,text){const{error}=await sb.from('feedback').insert({category:cat,body:text});if(error)throw error;},
+    async send(cat,text,alias){const{error}=await sb.from('feedback').insert({category:cat,body:text,alias:alias||null});if(error)throw error;},
     async reply(r,text){const{error}=await sb.from('replies').upsert({feedback_id:r.id,body:text,created_at:new Date().toISOString()},{onConflict:'feedback_id'});if(error)throw error;},
     async remove(r){const{error}=await sb.from('feedback').delete().eq('id',r.id);if(error)throw error;}
   };
   fb.refresh=async()=>{
     if(!fb.uid)return;
-    const{data,error}=await sb.from('feedback').select('id,user_id,author_email,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
+    const{data,error}=await sb.from('feedback').select('id,user_id,author_email,alias,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
     if(error){$('adSummary').textContent='Could not load ideas ('+errText(error)+').';return;}
     fb.rows=data.map(x=>{const rep=Array.isArray(x.replies)?x.replies[0]:x.replies;
-      return{id:x.id,uid:x.user_id,who:x.author_email||'Someone',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
+      return{id:x.id,uid:x.user_id,who:[x.alias,x.author_email].filter(Boolean).join(' · ')||'Anonymous',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
     fbRender();
   };
   const apply=async session=>{
     if(!session){
       fb.uid=null;fb.rows=[];
-      fbSetUser({label:'Not signed in.',blocked:'Sign in or create an account to send an idea.',showAuth:true});
+      fbSetUser({label:'Not signed in.',blocked:'Sign in, create an account, or continue without an account to send an idea.',showAuth:true});
       fbRender();return;
     }
     fb.uid=session.user.id;
     let admin=false;
     try{const{data}=await sb.rpc('is_admin');admin=data===true;}catch(e){}
-    fbSetUser({label:'Signed in as '+session.user.email+(admin?' · admin':'')+'.',admin,owner:admin,showOut:true});
+    fbSetUser({label:session.user.is_anonymous?'Sending without an account. Replies appear on this device only; signing out ends access to them.':'Signed in as '+session.user.email+(admin?' · admin':'')+'.',admin,owner:admin,showOut:true});
     await fb.refresh();
   };
   sb.auth.onAuthStateChange((event,session)=>{if(event!=='INITIAL_SESSION')setTimeout(()=>apply(session),0);});
   const msg=t=>{$('auMsg').textContent=t;};
   const creds=()=>({email:$('auEmail').value.trim(),password:$('auPass').value});
-  const busy=b=>{$('auIn').disabled=b;$('auUp').disabled=b;};
+  const busy=b=>{$('auIn').disabled=b;$('auUp').disabled=b;$('auAnon').disabled=b;};
+  $('auAnon').onclick=async()=>{
+    busy(true);msg('Starting…');
+    const{error}=await sb.auth.signInAnonymously();
+    busy(false);msg(error?'Sending without an account is not switched on yet. Please sign in or create an account.':'');
+  };
   $('fbAuthForm').onsubmit=async e=>{
     e.preventDefault();busy(true);msg('Signing in…');
     const{error}=await sb.auth.signInWithPassword(creds());
@@ -1322,7 +1329,7 @@ async function initFeedback(){
     const text=$('fbText').value.trim();if(!text)return;
     const btn=$('fbSubmit');btn.disabled=true;st.textContent='Sending…';
     try{
-      await fb.be.send($('fbCat').value,text);
+      await fb.be.send($('fbCat').value,text,$('fbAlias').value.trim());
       $('fbText').value='';$('fbLen').textContent='0';st.textContent='Thank you. Your idea was sent.';
       if(fb.refresh)await fb.refresh();
     }catch(err){st.textContent='Could not send your idea ('+errText(err)+'). Please try again later.';}
