@@ -62,7 +62,7 @@ tr.total td{font-weight:700;border-top:2px solid var(--line)}
 label{display:block;font-weight:600;font-size:.84rem;margin:8px 0 2px}
 label.chk{display:flex;gap:8px;align-items:flex-start;font-weight:500;margin:8px 0}
 input[type=range]{width:100%;accent-color:var(--accent)}
-input[type=number]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+input[type=number],input[type=email],input[type=password]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
 td input[type=number]{width:92px;text-align:right}
 .out{font-variant-numeric:tabular-nums}
 .big{font-size:1.5rem;font-weight:700}
@@ -521,7 +521,18 @@ textarea{resize:vertical;min-height:110px}
   <span class="tag">Feedback</span>
   <h1>What should we add?</h1>
   <p class="lead">Tell us what is missing, unclear or wrong. One idea per message works best.</p>
-  <p class="note" id="fbWho" role="status"></p>
+  <p class="note"><span id="fbWho" role="status"></span> <button type="button" class="btn alt sm" id="auOut" hidden>Sign out</button></p>
+  <div class="card" id="fbAuth" hidden>
+    <b>Sign in to send an idea</b>
+    <form id="fbAuthForm">
+      <label for="auEmail">Email</label>
+      <input type="email" id="auEmail" autocomplete="email" required>
+      <label for="auPass">Password (at least 8 characters)</label>
+      <input type="password" id="auPass" autocomplete="current-password" minlength="8" required>
+      <p><button class="btn" type="submit" id="auIn">Sign in</button> <button class="btn alt" type="button" id="auUp">Create account</button></p>
+      <p id="auMsg" class="note" role="status"></p>
+    </form>
+  </div>
   <div class="card">
     <p id="fbState" class="note" hidden></p>
     <form id="fbForm">
@@ -538,7 +549,7 @@ textarea{resize:vertical;min-height:110px}
       <button class="btn" type="submit" id="fbSubmit">Send idea</button>
       <p id="fbStatus" class="note" role="status"></p>
     </form>
-    <p class="note">Your ideas are stored with your claude.ai account. Only you and the site owner can see them. The owner sees the text and your display name, and may reply here. Do not include personal or financial details.</p>
+    <p class="note">Your ideas are stored with your account. Only you and the site owner can see them. The owner sees the text and your email address, and may reply here. Do not include personal or financial details.</p>
   </div>
   <div id="fbMine" hidden>
     <h2>Your ideas and replies</h2>
@@ -550,7 +561,7 @@ textarea{resize:vertical;min-height:110px}
 <section class="view" id="admin">
   <span class="tag">Admin</span>
   <h1>Feedback inbox</h1>
-  <p class="note" id="adSummary">Loading…</p>
+  <p class="note"><span id="adSummary">Loading…</span> <button type="button" class="btn alt sm" id="adRefresh">Refresh</button></p>
   <span class="seg" role="group" aria-label="Filter">
     <button data-ad="all" aria-pressed="true">All</button>
     <button data-ad="new" aria-pressed="false">Not replied</button>
@@ -587,11 +598,11 @@ textarea{resize:vertical;min-height:110px}
 
       <h3>Privacy</h3>
       <p>Bank Decoded is the controller of personal data processed through this site under the General Data Protection Regulation (EU) 2016/679. The calculators run in your browser. The numbers you enter in the profile are not sent to us and are not stored.</p>
-      <p>If you send feedback, we store your message, the type you chose, the date, your claude.ai account identifier and your display name. We use them only to read and reply to your idea. Legal basis: your consent, given by sending the form (Art. 6(1)(a) GDPR). Only you and Bank Decoded can see your submission. We keep it until we delete it or you ask us to. The data is stored with the platform provider Anthropic (claude.ai). <span class="ph">[confirm provider and transfer terms]</span></p>
+      <p>If you create an account and send feedback, we store your email address, your message, the type you chose and the date. We use them only to run sign-in, and to read and reply to your idea. Legal basis: your consent, given by creating the account and sending the form (Art. 6(1)(a) GDPR). Only you and Bank Decoded can see your submission. We keep it until we delete it or you ask us to. The data is stored with our database provider Supabase. <span class="ph">[confirm provider, data region and transfer terms]</span></p>
       <p>You can ask us to show, correct or delete your data, restrict or object to its use, or withdraw consent at any time, by writing to <span class="ph">[privacy email]</span>. You can also complain to your national data protection authority.</p>
 
       <h3>Cookies</h3>
-      <p>This site sets no cookies and uses no analytics or advertising trackers. <span class="ph">[confirm before hosting elsewhere]</span></p>
+      <p>This site sets no cookies and uses no analytics or advertising trackers. If you sign in, your browser keeps a sign-in token in its local storage so that you stay signed in. Signing out removes it. <span class="ph">[confirm before hosting elsewhere]</span></p>
     </details>
   </div>
 </footer>
@@ -1064,6 +1075,7 @@ const views=['home','v1','v2','v3','sources','glossary','feedback','admin'];
 function route(target){
   let h=typeof target==='string'?target:location.hash.replace('#','');if(!views.includes(h))h='home';
   if(h==='admin'&&!fb.admin)h='feedback'; // inbox is for signed-in admins only
+  if(fb.refresh&&(h==='admin'||h==='feedback'))fb.refresh();
   views.forEach(v=>$(v).classList.toggle('on',v===h));
   $('profile').style.display=['sources','glossary','feedback','admin'].includes(h)?'none':'';
   document.querySelectorAll('nav a').forEach(a=>{a.getAttribute('href')==='#'+h?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current');});
@@ -1102,17 +1114,36 @@ document.addEventListener('click',e=>{
   window.addEventListener('resize',hide);
 })();
 /* ================= FEEDBACK =================
-   Stored in the claude.ai artifact database, outside this HTML, so it survives republishing:
-     feedback/<uid>  {items:[{id,cat,text,at}]}      written by the submitter; Editors and the owner read all
-     replies/<uid>   {byItem:{<itemId>:{text,at}}}   written only by the owner; that submitter and Editors read it
-   Sign-in is the viewer's claude.ai account. Signed-out and view-only visitors cannot submit or see any idea.
-   shortcut: one reply per idea, no email to the submitter, no archive. Delete is owner-only and permanent. */
+   One set of screens, two storage backends:
+   1) Inside claude.ai (the published artifact): the artifact database.
+        feedback/<uid> {items:[{id,cat,text,at}]}   replies/<uid> {byItem:{<itemId>:{text,at}}}
+   2) On any other host (GitHub Pages): Supabase. Fill the two values below. Tables and rules: supabase-setup.sql.
+   shortcut: one reply per idea, no email notice to the submitter, no password reset, no live updates on Supabase
+   (the list refreshes after your own actions, when you open the tab, and with the Refresh button). */
+// Supabase dashboard -> Project Settings -> API. The anon key is meant to be public; the row level security rules
+// in supabase-setup.sql protect the data. Never put the service_role key here.
+const SUPABASE_URL='https://csriehyuwgnsmghzxzja.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_1ehPq0B8Ap-xtr3-Cxr5FQ_5NPzLFK6';
+const SUPABASE_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+
 const FB_CATS={new:'New feature or topic',explain:'Clearer explanation',fix:'Correction',other:'Other'};
-const fb={db:null,user:null,uid:null,blocked:'',admin:false,owner:false,items:{},reps:{},filter:'all',drafts:{},seq:0};
+// rows: [{id,uid,who,cat,text,at,reply:{text,at}|null}] newest first
+const fb={be:null,uid:null,admin:false,owner:false,rows:[],filter:'all',drafts:{},blocked:'',refresh:null};
 const mk=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
 const fmtDate=s=>new Date(s).toLocaleString();
-// Form stays visible and the button stays clickable; if sending is not possible, clicking explains why.
-function fbNotice(msg){fb.blocked=msg;const n=$('fbState');n.textContent=msg;n.hidden=false;}
+const errText=e=>(e&&(e.code||e.message))||'error';
+
+// Show who is signed in, what they may do, and why sending is blocked (if it is).
+function fbSetUser(i){
+  fb.admin=!!i.admin;fb.owner=!!i.owner;fb.blocked=i.blocked||'';
+  $('fbWho').textContent=i.label;
+  $('navAdmin').hidden=!fb.admin;
+  $('fbAuth').hidden=!i.showAuth;$('auOut').hidden=!i.showOut;
+  const n=$('fbState');n.textContent=fb.blocked;n.hidden=!fb.blocked;
+  const cur=document.querySelector('section.on');
+  if(cur&&cur.id==='admin'&&!fb.admin)route('feedback');
+  else if(fb.admin&&location.hash==='#admin')route('admin');
+}
 function replyBlock(rep){
   const b=mk('div',null,'callout');
   if(rep){b.append(mk('b','Reply from the site owner · '+fmtDate(rep.at)),mk('span',rep.text,'pre'));}
@@ -1128,53 +1159,40 @@ function renderMine(rows){
     list.append(c);
   });
 }
-async function sendReply(r,ta,btn,st){
+async function doReply(r,ta,btn,st){
   const text=ta.value.trim();
   if(!text){st.textContent='Write a reply first.';return;}
   btn.disabled=true;st.textContent='Saving…';
-  try{
-    const ref=fb.db.doc('replies/'+r.uid),s=await ref.get();
-    const by={...((s.exists&&(s.data()||{}).byItem)||{}),[r.id]:{text,at:new Date().toISOString()}};
-    await ref.set({byItem:by});
-    delete fb.drafts[r.id];st.textContent='Reply saved.';
-  }catch(err){st.textContent='Could not save ('+((err&&err.code)||'error')+').';}
+  try{await fb.be.reply(r,text);delete fb.drafts[r.id];st.textContent='Reply saved.';if(fb.refresh)await fb.refresh();}
+  catch(err){st.textContent='Could not save ('+errText(err)+').';}
   finally{btn.disabled=false;}
 }
-// Two clicks to delete (the viewer blocks confirm() dialogs). Removes the idea and its reply.
+// Two clicks to delete (the artifact viewer blocks confirm() dialogs). Removes the idea and its reply.
 function confirmDelete(r,del,st){
-  if(del.dataset.armed){deleteIdea(r,del,st);return;}
+  if(del.dataset.armed){doDelete(r,del,st);return;}
   del.dataset.armed='1';del.textContent='Confirm delete';st.textContent=' This removes the idea and its reply for good.';
   setTimeout(()=>{if(del.isConnected&&del.dataset.armed&&!del.disabled){delete del.dataset.armed;del.textContent='Delete';st.textContent='';}},5000);
 }
-async function deleteIdea(r,del,st){
+async function doDelete(r,del,st){
   del.disabled=true;st.textContent=' Deleting…';
-  try{
-    const ref=fb.db.doc('feedback/'+r.uid),s=await ref.get();
-    const items=((s.exists&&(s.data()||{}).items)||[]).filter(i=>i.id!==r.id);
-    if(items.length)await ref.set({items});else await ref.delete();
-    const rr=fb.db.doc('replies/'+r.uid),rs=await rr.get();
-    const by={...((rs.exists&&(rs.data()||{}).byItem)||{})};
-    if(by[r.id]){delete by[r.id];if(Object.keys(by).length)await rr.set({byItem:by});else await rr.delete();}
-    delete fb.drafts[r.id]; // the live snapshot removes the card
-  }catch(err){st.textContent=' Could not delete ('+((err&&err.code)||'error')+').';del.disabled=false;}
+  try{await fb.be.remove(r);delete fb.drafts[r.id];if(fb.refresh)await fb.refresh();}
+  catch(err){st.textContent=' Could not delete ('+errText(err)+').';del.disabled=false;}
 }
-async function renderAdmin(rows,seq){
-  const ps=await fb.user.profiles([...new Set(rows.map(r=>r.uid))]);
-  if(seq!==fb.seq)return; // a newer snapshot arrived while names loaded
+function renderAdmin(rows){
   const open=rows.filter(r=>!r.reply).length;
   $('adSummary').textContent=rows.length?`${rows.length} idea${rows.length===1?'':'s'} · ${open} not replied`:'No ideas yet.';
   const shown=rows.filter(r=>fb.filter==='all'||(fb.filter==='new'?!r.reply:!!r.reply));
   const list=$('adList');list.replaceChildren();
   shown.forEach(r=>{
     const c=mk('div',null,'card');
-    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',` · ${(ps[r.uid]&&ps[r.uid].name)||'Someone'} · ${fmtDate(r.at)}`,'note'),mk('p',r.text,'pre'));
+    c.append(mk('b',FB_CATS[r.cat]||'Other'),mk('span',` · ${r.who||'Someone'} · ${fmtDate(r.at)}`,'note'),mk('p',r.text,'pre'));
     if(fb.owner){
       const ta=mk('textarea');ta.maxLength=1000;ta.setAttribute('aria-label','Reply to this idea');
       ta.value=fb.drafts[r.id]!==undefined?fb.drafts[r.id]:(r.reply?r.reply.text:'');
       ta.oninput=()=>{fb.drafts[r.id]=ta.value;};
       const btn=mk('button',r.reply?'Update reply':'Send reply','btn sm');btn.type='button';
       const st=mk('span',r.reply?' Replied '+fmtDate(r.reply.at):'','note');st.setAttribute('role','status');
-      btn.onclick=()=>sendReply(r,ta,btn,st);
+      btn.onclick=()=>doReply(r,ta,btn,st);
       const del=mk('button','Delete','btn alt sm');del.type='button';
       del.onclick=()=>confirmDelete(r,del,st);
       c.append(ta,mk('br'),btn,' ',del,st);
@@ -1183,55 +1201,140 @@ async function renderAdmin(rows,seq){
   });
 }
 function fbRender(){
-  const rows=[];
-  Object.entries(fb.items).forEach(([uid,list])=>list.forEach(i=>rows.push({...i,uid,reply:(fb.reps[uid]||{})[i.id]||null})));
-  rows.sort((a,b)=>(a.at<b.at?1:-1));
-  renderMine(rows.filter(r=>r.uid===fb.uid));
-  if(fb.admin)renderAdmin(rows,++fb.seq);
+  renderMine(fb.rows.filter(r=>r.uid&&r.uid===fb.uid));
+  if(fb.admin)renderAdmin(fb.rows);
 }
+
+/* ---------- backend 1: claude.ai artifact database ---------- */
+async function startArtifact(claude){
+  let db=null,user=null;
+  try{db=await claude.use('db');user=await claude.use('user');}catch(e){}
+  if(!db||!user){fbSetUser({label:'Not signed in.',blocked:'Sign in to claude.ai to send an idea.'});return;}
+  const uid=await user.id(),me=await user.me(),admin=await user.canEdit(),owner=await user.isOwner(),canWrite=await user.can('data.write');
+  fb.uid=uid;
+  fbSetUser({label:'Signed in as '+(me.name||'you')+(admin?' · admin':'')+'.',admin,owner,
+    blocked:(!uid||canWrite===false)?'Sending ideas is open to invited contributors. Ask the site owner for contributor access.':''});
+  fb.be={
+    async send(cat,text){
+      const ref=db.doc('feedback/'+uid),snap=await ref.get();
+      const items=snap.exists?[...((snap.data()||{}).items||[])]:[];
+      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat,text,at:new Date().toISOString()});
+      await ref.set({items:items.slice(-50)});
+    },
+    async reply(r,text){
+      const ref=db.doc('replies/'+r.uid),s=await ref.get();
+      const by={...((s.exists&&(s.data()||{}).byItem)||{}),[r.id]:{text,at:new Date().toISOString()}};
+      await ref.set({byItem:by});
+    },
+    async remove(r){
+      const ref=db.doc('feedback/'+r.uid),s=await ref.get();
+      const items=((s.exists&&(s.data()||{}).items)||[]).filter(i=>i.id!==r.id);
+      if(items.length)await ref.set({items});else await ref.delete();
+      const rr=db.doc('replies/'+r.uid),rs=await rr.get();
+      const by={...((rs.exists&&(rs.data()||{}).byItem)||{})};
+      if(by[r.id]){delete by[r.id];if(Object.keys(by).length)await rr.set({byItem:by});else await rr.delete();}
+    }
+  };
+  // Live: subscribe once. Admins read both collections; everyone else reads only their own two documents.
+  let items0={},reps0={};
+  const rebuild=async()=>{
+    const rows=[];
+    Object.entries(items0).forEach(([u,list])=>list.forEach(i=>rows.push({id:i.id,uid:u,cat:i.cat,text:i.text,at:i.at,reply:(reps0[u]||{})[i.id]||null})));
+    rows.sort((a,b)=>(a.at<b.at?1:-1));
+    if(admin){const ps=await user.profiles([...new Set(rows.map(r=>r.uid))]);rows.forEach(r=>{r.who=(ps[r.uid]&&ps[r.uid].name)||'Someone';});}
+    fb.rows=rows;fbRender();
+  };
+  const timer=setTimeout(()=>{$('adSummary').textContent='The database cannot be reached yet.';},10000);
+  const fail=err=>{clearTimeout(timer);$('adSummary').textContent='Could not load ideas ('+errText(err)+').';};
+  if(admin){
+    db.collection('feedback').onSnapshot(s=>{clearTimeout(timer);items0={};s.docs.forEach(d=>items0[d.id]=(d.data()||{}).items||[]);rebuild();},fail);
+    db.collection('replies').onSnapshot(s=>{reps0={};s.docs.forEach(d=>reps0[d.id]=(d.data()||{}).byItem||{});rebuild();},fail);
+  }else if(uid){
+    db.doc('feedback/'+uid).onSnapshot(s=>{clearTimeout(timer);items0=s.exists?{[uid]:(s.data()||{}).items||[]}:{};rebuild();},fail);
+    db.doc('replies/'+uid).onSnapshot(s=>{reps0=s.exists?{[uid]:(s.data()||{}).byItem||{}}:{};rebuild();},fail);
+  }
+}
+
+/* ---------- backend 2: Supabase (sign-in + database) ---------- */
+async function startSupabase(){
+  if(!window.supabase)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=SUPABASE_LIB;s.onload=ok;s.onerror=no;document.head.append(s);});
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  fb.be={
+    async send(cat,text){const{error}=await sb.from('feedback').insert({category:cat,body:text});if(error)throw error;},
+    async reply(r,text){const{error}=await sb.from('replies').upsert({feedback_id:r.id,body:text,created_at:new Date().toISOString()},{onConflict:'feedback_id'});if(error)throw error;},
+    async remove(r){const{error}=await sb.from('feedback').delete().eq('id',r.id);if(error)throw error;}
+  };
+  fb.refresh=async()=>{
+    if(!fb.uid)return;
+    const{data,error}=await sb.from('feedback').select('id,user_id,author_email,category,body,created_at,replies(body,created_at)').order('created_at',{ascending:false});
+    if(error){$('adSummary').textContent='Could not load ideas ('+errText(error)+').';return;}
+    fb.rows=data.map(x=>{const rep=Array.isArray(x.replies)?x.replies[0]:x.replies;
+      return{id:x.id,uid:x.user_id,who:x.author_email||'Someone',cat:x.category,text:x.body,at:x.created_at,reply:rep?{text:rep.body,at:rep.created_at}:null};});
+    fbRender();
+  };
+  const apply=async session=>{
+    if(!session){
+      fb.uid=null;fb.rows=[];
+      fbSetUser({label:'Not signed in.',blocked:'Sign in or create an account to send an idea.',showAuth:true});
+      fbRender();return;
+    }
+    fb.uid=session.user.id;
+    let admin=false;
+    try{const{data}=await sb.rpc('is_admin');admin=data===true;}catch(e){}
+    fbSetUser({label:'Signed in as '+session.user.email+(admin?' · admin':'')+'.',admin,owner:admin,showOut:true});
+    await fb.refresh();
+  };
+  sb.auth.onAuthStateChange((event,session)=>{if(event!=='INITIAL_SESSION')setTimeout(()=>apply(session),0);});
+  const msg=t=>{$('auMsg').textContent=t;};
+  const creds=()=>({email:$('auEmail').value.trim(),password:$('auPass').value});
+  const busy=b=>{$('auIn').disabled=b;$('auUp').disabled=b;};
+  $('fbAuthForm').onsubmit=async e=>{
+    e.preventDefault();busy(true);msg('Signing in…');
+    const{error}=await sb.auth.signInWithPassword(creds());
+    busy(false);msg(error?error.message:'');if(!error)$('auPass').value='';
+  };
+  $('auUp').onclick=async()=>{
+    const c=creds();
+    if(!c.email||c.password.length<8){msg('Enter your email and a password of at least 8 characters.');return;}
+    busy(true);msg('Creating account…');
+    const{data,error}=await sb.auth.signUp(c);
+    busy(false);
+    if(error){msg(error.message);return;}
+    $('auPass').value='';
+    msg(data.session?'':'Check your email to confirm your address, then sign in.');
+  };
+  $('auOut').onclick=()=>sb.auth.signOut();
+  await apply((await sb.auth.getSession()).data.session);
+}
+
 async function initFeedback(){
   $('fbText').oninput=()=>{$('fbLen').textContent=$('fbText').value.length;};
-  // Until the database answers, a click must never fall through to a real form submit (page reload).
-  $('fbForm').onsubmit=e=>{e.preventDefault();$('fbStatus').textContent=fb.blocked||'Still connecting to the database. Try again in a moment.';};
   document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{
     fb.filter=b.dataset.ad;document.querySelectorAll('[data-ad]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
   });
-  const claude=window.claude;
-  if(!claude||!claude.use){$('fbWho').textContent='Not signed in.';fbNotice('This form works in the published version of the site, where ideas are saved. Open the shared link to use it.');return;}
-  try{fb.db=await claude.use('db');fb.user=await claude.use('user');}catch(e){}
-  if(!fb.db||!fb.user){$('fbWho').textContent='Not signed in.';fbNotice('Sign in to claude.ai to send an idea.');return;}
-  fb.uid=await fb.user.id();
-  const me=await fb.user.me();
-  fb.admin=await fb.user.canEdit();fb.owner=await fb.user.isOwner();
-  $('fbWho').textContent='Signed in as '+(me.name||'you')+(fb.admin?' · admin':'')+'.';
-  $('navAdmin').hidden=!fb.admin;
-  const canWrite=await fb.user.can('data.write');
-  if(!fb.uid||canWrite===false)fbNotice('Sending ideas is open to invited contributors. Ask the site owner for contributor access.');
-  if(!fb.blocked)$('fbForm').onsubmit=async e=>{
+  $('adRefresh').onclick=()=>{if(fb.refresh)fb.refresh();};
+  // One click handler for every state. A click must never fall through to a real form submit (page reload).
+  $('fbForm').onsubmit=async e=>{
     e.preventDefault();
+    const st=$('fbStatus');
+    if(fb.blocked){st.textContent=fb.blocked;return;}
+    if(!fb.be){st.textContent='Still connecting. Try again in a moment.';return;}
     const text=$('fbText').value.trim();if(!text)return;
-    const btn=$('fbSubmit'),st=$('fbStatus');btn.disabled=true;st.textContent='Sending…';
+    const btn=$('fbSubmit');btn.disabled=true;st.textContent='Sending…';
     try{
-      const ref=fb.db.doc('feedback/'+fb.uid);
-      const snap=await ref.get();
-      const items=snap.exists?[...((snap.data()||{}).items||[])]:[];
-      items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cat:$('fbCat').value,text,at:new Date().toISOString()});
-      await ref.set({items:items.slice(-50)});
+      await fb.be.send($('fbCat').value,text);
       $('fbText').value='';$('fbLen').textContent='0';st.textContent='Thank you. Your idea was sent.';
-    }catch(err){st.textContent='Could not send your idea ('+((err&&err.code)||'error')+'). Please try again later.';}
+      if(fb.refresh)await fb.refresh();
+    }catch(err){st.textContent='Could not send your idea ('+errText(err)+'). Please try again later.';}
     finally{btn.disabled=false;}
   };
-  // Subscribe once. Admins read both collections; everyone else reads only their own two documents.
-  const timer=setTimeout(()=>{$('adSummary').textContent='The database cannot be reached yet.';},10000);
-  const fail=err=>{clearTimeout(timer);$('adSummary').textContent='Could not load ideas ('+((err&&err.code)||'error')+').';};
-  if(fb.admin){
-    fb.db.collection('feedback').onSnapshot(s=>{clearTimeout(timer);fb.items={};s.docs.forEach(d=>fb.items[d.id]=(d.data()||{}).items||[]);fbRender();},fail);
-    fb.db.collection('replies').onSnapshot(s=>{fb.reps={};s.docs.forEach(d=>fb.reps[d.id]=(d.data()||{}).byItem||{});fbRender();},fail);
-    if(location.hash==='#admin')route('admin');
-  }else if(fb.uid){
-    fb.db.doc('feedback/'+fb.uid).onSnapshot(s=>{clearTimeout(timer);fb.items=s.exists?{[fb.uid]:(s.data()||{}).items||[]}:{};fbRender();},fail);
-    fb.db.doc('replies/'+fb.uid).onSnapshot(s=>{fb.reps=s.exists?{[fb.uid]:(s.data()||{}).byItem||{}}:{};fbRender();},fail);
+  if(window.claude&&window.claude.use){await startArtifact(window.claude);return;}
+  if(SUPABASE_URL&&SUPABASE_ANON_KEY){
+    try{await startSupabase();}
+    catch(e){fbSetUser({label:'Not signed in.',blocked:'Feedback is temporarily unavailable. Please try again later.'});}
+    return;
   }
+  fbSetUser({label:'Not signed in.',blocked:'Feedback is not available yet. Please check back soon.'});
 }
 function init(){
   buildProfile();writeProfile();buildCap();buildEL();srcTable();
