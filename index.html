@@ -118,7 +118,7 @@ button.pill[aria-pressed="true"]{background:var(--cc,var(--accent));color:var(--
 .cat-new{--cc:var(--c2)}.cat-explain{--cc:var(--c7)}.cat-fix{--cc:var(--c3)}.cat-other{--cc:var(--c4)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .tags{display:flex;flex-wrap:wrap;gap:6px}
-.tone-positive{--cc:var(--ok)}.tone-negative{--cc:var(--bad)}
+.tone-positive{--cc:var(--ok)}.tone-negative{--cc:var(--bad)}.tone-none{--cc:var(--c5)}
 .opt{display:inline-flex;align-items:center;gap:6px;font-weight:500;margin:4px 14px 4px 0;color:var(--cc,var(--ink))}
 fieldset.tone{margin:12px 0 4px}
 /* admin statistics */
@@ -127,7 +127,10 @@ fieldset.tone{margin:12px 0 4px}
 .btrack{height:14px;background:var(--bg);border:1px solid var(--line);border-radius:7px;overflow:hidden;display:flex}
 .btrack>i{display:block;height:100%}
 .cols{display:flex;align-items:flex-end;gap:4px;height:96px;border-bottom:1px solid var(--line);margin-top:8px}
-.cols>div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+.cols>.col{flex:1;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;min-height:2px;background:var(--line)}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0}
+.frow .chips{margin:0}
+.flab{min-width:64px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
 .axis{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem;margin-top:4px}
 .lg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.78rem;color:var(--muted);margin-top:6px}
 .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -592,24 +595,44 @@ fieldset.tone{margin:12px 0 4px}
 <section class="view" id="admin">
   <span class="tag">Admin</span>
   <h1>Admin dashboard</h1>
+  <div class="card" id="adFilters">
+    <b>Show me</b>
+    <div class="frow"><span class="flab">Period</span>
+      <span class="seg" id="adRange" role="group" aria-label="Period">
+        <button type="button" data-range="14" aria-pressed="true">14 days</button>
+        <button type="button" data-range="30" aria-pressed="false">1 month</button>
+        <button type="button" data-range="90" aria-pressed="false">3 months</button>
+        <button type="button" data-range="365" aria-pressed="false">1 year</button>
+        <button type="button" data-range="0" aria-pressed="false">All time</button>
+      </span></div>
+    <div class="frow"><span class="flab">Types</span>
+      <div class="chips" id="adCats" role="group" aria-label="Types">
+        <button type="button" class="pill" data-cat="all" aria-pressed="true">All types</button>
+        <button type="button" class="pill cat-new" data-cat="new" aria-pressed="true">New feature or topic</button>
+        <button type="button" class="pill cat-explain" data-cat="explain" aria-pressed="true">Clearer explanation</button>
+        <button type="button" class="pill cat-fix" data-cat="fix" aria-pressed="true">Correction</button>
+        <button type="button" class="pill cat-other" data-cat="other" aria-pressed="true">Other</button>
+      </div></div>
+    <div class="frow"><span class="flab">Tone</span>
+      <div class="chips" id="adTones" role="group" aria-label="Tone">
+        <button type="button" class="pill" data-tone="all" aria-pressed="true">All tones</button>
+        <button type="button" class="pill tone-positive" data-tone="positive" aria-pressed="true">Positive</button>
+        <button type="button" class="pill tone-negative" data-tone="negative" aria-pressed="true">Negative</button>
+        <button type="button" class="pill tone-none" data-tone="none" aria-pressed="true">Not specified</button>
+      </div></div>
+    <div class="frow"><span class="flab">Replies</span>
+      <span class="seg" id="adStatus" role="group" aria-label="Replies">
+        <button type="button" data-status="all" aria-pressed="true">All</button>
+        <button type="button" data-status="open" aria-pressed="false">Not replied</button>
+        <button type="button" data-status="done" aria-pressed="false">Replied</button>
+      </span></div>
+    <p class="note">Click a type or tone to focus on it, then click more to add them. Click it again to remove it.</p>
+    <p><span id="adSummary" class="note">Loading…</span> <button type="button" class="btn alt sm" id="adReset">Reset filters</button> <button type="button" class="btn alt sm" id="adRefresh">Refresh</button></p>
+  </div>
   <h2>Statistics</h2>
   <div id="adStats"></div>
   <h2>Inbox</h2>
-  <p class="note"><span id="adSummary">Loading…</span> <button type="button" class="btn alt sm" id="adRefresh">Refresh</button></p>
-  <span class="seg" role="group" aria-label="Filter">
-    <button data-ad="all" aria-pressed="true">All</button>
-    <button data-ad="new" aria-pressed="false">Not replied</button>
-    <button data-ad="done" aria-pressed="false">Replied</button>
-  </span>
-  <div class="chips" id="adCats" role="group" aria-label="Filter by type">
-    <button type="button" class="pill" data-cat="all" aria-pressed="true">All types</button>
-    <button type="button" class="pill cat-new" data-cat="new" aria-pressed="false">New feature or topic</button>
-    <button type="button" class="pill cat-explain" data-cat="explain" aria-pressed="false">Clearer explanation</button>
-    <button type="button" class="pill cat-fix" data-cat="fix" aria-pressed="false">Correction</button>
-    <button type="button" class="pill cat-other" data-cat="other" aria-pressed="false">Other</button>
-  </div>
-  <div id="adList"></div>
-</section>
+  <div id="adList"></div></section>
 </main>
 
 <footer>
@@ -1169,7 +1192,7 @@ const SUPABASE_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/d
 
 const FB_CATS={new:'New feature or topic',explain:'Clearer explanation',fix:'Correction',other:'Other'};
 // rows: [{id,uid,who,cat,text,at,reply:{text,at}|null}] newest first
-const fb={be:null,uid:null,admin:false,owner:false,rows:[],filter:'all',cat:'all',drafts:{},blocked:'',refresh:null};
+const fb={be:null,uid:null,admin:false,owner:false,rows:[],drafts:{},blocked:'',refresh:null};
 const mk=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
 const fmtDate=s=>new Date(s).toLocaleString();
 const errText=e=>(e&&(e.code||e.message))||'error';
@@ -1228,57 +1251,120 @@ async function doDelete(r,del,st){
   try{await fb.be.remove(r);delete fb.drafts[r.id];if(fb.refresh)await fb.refresh();}
   catch(err){st.textContent=' Could not delete ('+errText(err)+').';del.disabled=false;}
 }
-// Statistics above the inbox: numbers, ideas by type, positive/negative by type, ideas per day. Plain HTML, no chart library.
+/* ---------- Admin dashboard: one set of filters drives both the statistics and the inbox ---------- */
+const TONE_KEYS=['positive','negative','none'];
+const TONE_LABEL={positive:'Positive',negative:'Negative',none:'Not specified'};
+const RANGE_LABEL={14:'last 14 days',30:'last month',90:'last 3 months',365:'last year',0:'all time'};
+const DAY=864e5;
+const freshSel=()=>({range:14,cats:new Set(Object.keys(FB_CATS)),tones:new Set(TONE_KEYS),status:'all'});
+fb.sel=freshSel();
+const toneOf=r=>r.tone||'none';
+const inRange=r=>fb.sel.range===0||Date.now()-Date.parse(r.at)<=fb.sel.range*DAY;
+// Does an idea match the filters? "skip" leaves one filter out, so each button can show how many ideas it would add.
+function match(r,skip){
+  const s=fb.sel;
+  return(skip==='range'||inRange(r))&&(skip==='cat'||s.cats.has(r.cat))&&(skip==='tone'||s.tones.has(toneOf(r)))
+    &&(skip==='status'||s.status==='all'||(s.status==='open'?!r.reply:!!r.reply));
+}
+// Clicking a button: from "everything selected" it focuses on that one; otherwise it adds or removes it. It never ends up empty.
+function toggleSel(set,key,all){
+  if(set.size===all.length){set.clear();set.add(key);}
+  else if(set.has(key)){set.delete(key);if(!set.size)all.forEach(k=>set.add(k));}
+  else set.add(key);
+}
+function initAdminFilters(){
+  const bind=(q,attr,fn)=>document.querySelectorAll(q).forEach(b=>{b.onclick=()=>{fn(b.dataset[attr]);fbRender();};});
+  const cats=Object.keys(FB_CATS);
+  bind('#adRange [data-range]','range',v=>{fb.sel.range=+v;});
+  bind('#adCats [data-cat]','cat',v=>{if(v==='all')cats.forEach(k=>fb.sel.cats.add(k));else toggleSel(fb.sel.cats,v,cats);});
+  bind('#adTones [data-tone]','tone',v=>{if(v==='all')TONE_KEYS.forEach(k=>fb.sel.tones.add(k));else toggleSel(fb.sel.tones,v,TONE_KEYS);});
+  bind('#adStatus [data-status]','status',v=>{fb.sel.status=v;});
+  $('adReset').onclick=()=>{fb.sel=freshSel();fbRender();};
+}
+// Show which buttons are on, and how many ideas each one holds under the other filters.
+function renderFilters(rows){
+  const s=fb.sel,cats=Object.keys(FB_CATS);
+  document.querySelectorAll('#adRange [data-range]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.range===s.range));
+  document.querySelectorAll('#adStatus [data-status]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.status===s.status));
+  document.querySelectorAll('#adCats [data-cat]').forEach(b=>{
+    const k=b.dataset.cat;
+    if(k==='all'){b.setAttribute('aria-pressed',s.cats.size===cats.length);b.textContent='All types ('+rows.filter(r=>match(r,'cat')).length+')';}
+    else{b.setAttribute('aria-pressed',s.cats.has(k));b.textContent=FB_CATS[k]+' ('+rows.filter(r=>r.cat===k&&match(r,'cat')).length+')';}
+  });
+  document.querySelectorAll('#adTones [data-tone]').forEach(b=>{
+    const k=b.dataset.tone;
+    if(k==='all'){b.setAttribute('aria-pressed',s.tones.size===TONE_KEYS.length);b.textContent='All tones ('+rows.filter(r=>match(r,'tone')).length+')';}
+    else{b.setAttribute('aria-pressed',s.tones.has(k));b.textContent=TONE_LABEL[k]+' ('+rows.filter(r=>toneOf(r)===k&&match(r,'tone')).length+')';}
+  });
+}
+// Time buckets for the chart: days for 14 days and 1 month, weeks for 3 months, months for 1 year and all time.
+function timeBuckets(rows){
+  const r=fb.sel.range,n=new Date(),Y=n.getFullYear(),M=n.getMonth(),D=n.getDate(),out=[];
+  const fmt=(d,o)=>d.toLocaleDateString(undefined,o);
+  if(r===14||r===30){for(let k=r-1;k>=0;k--){const a=new Date(Y,M,D-k);out.push({a,b:new Date(Y,M,D-k+1),l:fmt(a,{day:'numeric',month:'short'})});}}
+  else if(r===90){for(let k=12;k>=0;k--){const a=new Date(Y,M,D-k*7-6);out.push({a,b:new Date(Y,M,D-k*7+1),l:fmt(a,{day:'numeric',month:'short'})});}}
+  else{
+    let months=12;
+    if(r===0&&rows.length){const f=new Date(Math.min(...rows.map(x=>Date.parse(x.at))));months=Math.min(36,(Y-f.getFullYear())*12+M-f.getMonth()+1);}
+    for(let k=months-1;k>=0;k--){const a=new Date(Y,M-k,1);out.push({a,b:new Date(Y,M-k+1,1),l:fmt(a,{month:'short',year:'2-digit'})});}
+  }
+  return out;
+}
+// Statistics for the ideas that match the filters. Plain HTML, no chart library.
 function renderStats(rows){
   const box=$('adStats');box.replaceChildren();
-  if(!rows.length){box.append(mk('p','Statistics appear when the first idea arrives.','note'));return;}
-  const cats=Object.keys(FB_CATS),total=rows.length,open=rows.filter(r=>!r.reply).length;
-  const count=(f)=>rows.filter(f).length;
+  if(!rows.length){box.append(mk('p','Nothing matches these filters.','note'));return;}
+  const cats=Object.keys(FB_CATS).filter(c=>fb.sel.cats.has(c)),total=rows.length,open=rows.filter(r=>!r.reply).length;
+  const count=f=>rows.filter(f).length;
   const kp=mk('div',null,'kpis');
-  [['Ideas',total],['Not replied',open],['Reply rate',Math.round((total-open)/total*100)+'%'],['Last 7 days',count(r=>Date.now()-Date.parse(r.at)<7*864e5)],['Positive',count(r=>r.tone==='positive')],['Negative',count(r=>r.tone==='negative')]]
+  [['Ideas',total],['Not replied',open],['Reply rate',Math.round((total-open)/total*100)+'%'],
+   ['Positive',count(r=>toneOf(r)==='positive')],['Negative',count(r=>toneOf(r)==='negative')],['Not specified',count(r=>toneOf(r)==='none')]]
     .forEach(([a,b])=>{const d=mk('div',null,'kpi');d.append(mk('span',a),mk('strong',String(b)));kp.append(d);});
   box.append(kp);
-  const row=(c,fill,right)=>{ // one labelled bar: type pill, track, numbers
-    const el=mk('div',null,'brow cat-'+c);
-    el.append(mk('span',FB_CATS[c],'pill cat-'+c),fill,mk('span',right,'note'));
-    return el;
-  };
+  const bar=(c,track,right)=>{const el=mk('div',null,'brow cat-'+c);el.append(mk('span',FB_CATS[c],'pill cat-'+c),track,mk('span',right,'note'));return el;};
   box.append(mk('h3','Ideas by type'));
   const max=Math.max(...cats.map(c=>count(r=>r.cat===c)),1);
   cats.forEach(c=>{
     const n=count(r=>r.cat===c),t=mk('div',null,'btrack'),i=mk('i');i.style.width=(n/max*100)+'%';i.style.background='var(--cc)';t.append(i);
-    box.append(row(c,t,n+' ('+Math.round(n/total*100)+'%)'));
+    box.append(bar(c,t,n+' ('+Math.round(n/total*100)+'%)'));
   });
   box.append(mk('h3','Positive or negative, by type'));
   cats.forEach(c=>{
-    const of=rows.filter(r=>r.cat===c),n=of.length||1,p=of.filter(r=>r.tone==='positive').length,g=of.filter(r=>r.tone==='negative').length,u=of.length-p-g;
+    const of=rows.filter(r=>r.cat===c),n=of.length||1,p=of.filter(r=>toneOf(r)==='positive').length,g=of.filter(r=>toneOf(r)==='negative').length,u=of.length-p-g;
     const t=mk('div',null,'btrack');
     [[p,'var(--ok)'],[g,'var(--bad)'],[u,'var(--line)']].forEach(([v,col])=>{const i=mk('i');i.style.width=(v/n*100)+'%';i.style.background=col;t.append(i);});
-    box.append(row(c,t,of.length?p+' pos · '+g+' neg · '+u+' none':'no ideas'));
+    box.append(bar(c,t,of.length?p+' pos · '+g+' neg · '+u+' none':'no ideas'));
   });
   const lg=mk('div',null,'lg');
-  [['var(--ok)','Positive'],['var(--bad)','Negative'],['var(--line)','Not specified']].forEach(([col,l])=>{const s=mk('span',l);const i=mk('i');i.style.background=col;s.prepend(i);lg.append(s);});
+  [['var(--ok)','Positive'],['var(--bad)','Negative'],['var(--line)','Not specified']].forEach(([col,l])=>{const s=mk('span',l),i=mk('i');i.style.background=col;s.prepend(i);lg.append(s);});
   box.append(lg);
-  box.append(mk('h3','Ideas per day, last 14 days'));
-  const days=[];for(let d=13;d>=0;d--){const x=new Date();x.setHours(0,0,0,0);x.setDate(x.getDate()-d);days.push(x);}
-  const per=days.map(x=>count(r=>{const t=new Date(r.at);return t>=x&&t<new Date(x.getTime()+864e5);}));
-  const top=Math.max(...per,1),cols=mk('div',null,'cols');cols.setAttribute('role','img');
-  cols.setAttribute('aria-label','Ideas per day, last 14 days: '+per.join(', '));
-  per.forEach((v,k)=>{const b=mk('div');b.style.height=(v/top*100)+'%';b.title=days[k].toLocaleDateString()+': '+v;cols.append(b);});
-  const ax=mk('div',null,'axis');ax.append(mk('span',days[0].toLocaleDateString()),mk('span','peak '+top+' per day'),mk('span','today'));
-  box.append(cols,ax);
+  // over time: one column per bucket, stacked by type
+  const bk=timeBuckets(rows).map(b=>{
+    const inB=rows.filter(r=>{const t=Date.parse(r.at);return t>=b.a&&t<b.b;});
+    return{...b,n:inB.length,by:Object.fromEntries(cats.map(c=>[c,inB.filter(r=>r.cat===c).length]))};
+  });
+  const top=Math.max(...bk.map(b=>b.n),1);
+  box.append(mk('h3','Ideas over time, '+RANGE_LABEL[fb.sel.range]+' ('+(fb.sel.range===90?'per week':fb.sel.range>90||fb.sel.range===0?'per month':'per day')+')'));
+  const cols=mk('div',null,'cols');cols.setAttribute('role','img');
+  cols.setAttribute('aria-label','Ideas over time: '+bk.map(b=>b.l+' '+b.n).join(', '));
+  bk.forEach(b=>{
+    const col=mk('div',null,'col');col.style.height=(b.n/top*100)+'%';
+    col.title=b.l+': '+b.n+(b.n?' ('+cats.filter(c=>b.by[c]).map(c=>FB_CATS[c]+' '+b.by[c]).join(', ')+')':'');
+    cats.forEach(c=>{if(b.by[c]){const sg=mk('div',null,'cat-'+c);sg.style.flex=b.by[c]+' 1 0';sg.style.background='var(--cc)';col.append(sg);}});
+    cols.append(col);
+  });
+  const ax=mk('div',null,'axis');ax.append(mk('span',bk[0].l),mk('span','peak '+top),mk('span',bk[bk.length-1].l));
+  const lg2=mk('div',null,'lg');
+  cats.forEach(c=>{const s=mk('span',FB_CATS[c],'cat-'+c),i=mk('i');i.style.background='var(--cc)';s.prepend(i);lg2.append(s);});
+  box.append(cols,ax,lg2);
 }
 function renderAdmin(rows){
-  renderStats(rows);
-  const open=rows.filter(r=>!r.reply).length;
-  $('adSummary').textContent=rows.length?`${rows.length} idea${rows.length===1?'':'s'} · ${open} not replied`:'No ideas yet.';
-  const shown=rows.filter(r=>(fb.filter==='all'||(fb.filter==='new'?!r.reply:!!r.reply))&&(fb.cat==='all'||r.cat===fb.cat));
-  document.querySelectorAll('#adCats [data-cat]').forEach(b=>{
-    const k=b.dataset.cat,n=k==='all'?rows.length:rows.filter(r=>r.cat===k).length;
-    b.textContent=(k==='all'?'All types':FB_CATS[k])+' ('+n+')';
-  });
-  if(rows.length&&shown.length!==rows.length)$('adSummary').textContent+=' · showing '+shown.length;
+  renderFilters(rows);
+  const shown=rows.filter(r=>match(r));
+  $('adSummary').textContent=rows.length?`Showing ${shown.length} of ${rows.length} ideas · ${RANGE_LABEL[fb.sel.range]}`:'No ideas yet.';
+  renderStats(shown);
   const list=$('adList');list.replaceChildren();
+  if(rows.length&&!shown.length)list.append(mk('p','Nothing matches these filters.','note'));
   shown.forEach(r=>{
     const c=mk('div',null,'card');
     c.append(cardHead(r.who||'Someone',r),mk('p',r.text,'pre'));
@@ -1422,12 +1508,7 @@ async function startSupabase(){
 
 async function initFeedback(){
   $('fbText').oninput=()=>{$('fbLen').textContent=$('fbText').value.length;};
-  document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{
-    fb.filter=b.dataset.ad;document.querySelectorAll('[data-ad]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
-  });
-  document.querySelectorAll('#adCats [data-cat]').forEach(b=>b.onclick=()=>{
-    fb.cat=b.dataset.cat;document.querySelectorAll('#adCats [data-cat]').forEach(x=>x.setAttribute('aria-pressed',x===b));fbRender();
-  });
+  initAdminFilters();
   $('adRefresh').onclick=()=>{if(fb.refresh)fb.refresh();};
   // One click handler for every state. A click must never fall through to a real form submit (page reload).
   $('fbForm').onsubmit=async e=>{
